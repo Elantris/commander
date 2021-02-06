@@ -1,10 +1,13 @@
-import { Client, WebhookClient } from 'discord.js'
+import { Client } from 'discord.js'
 import moment from 'moment'
 import config from '../config'
+import handleMessage from './utils/handleMessage'
+import { loggerHook } from './utils/hooks'
 
 const startedAt = Date.now()
-const loggerHook = new WebhookClient(...(config.DISCORD.LOGGER_HOOK as [string, string]))
 const client = new Client()
+
+client.on('message', handleMessage)
 
 client.on('ready', () => {
   const readyAt = Date.now()
@@ -15,3 +18,5 @@ client.on('ready', () => {
       .replace('PREPARING_TIME', `${readyAt - startedAt}`),
   )
 })
+
+client.login(config.DISCORD.TOKEN)
