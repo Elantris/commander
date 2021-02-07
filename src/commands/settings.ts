@@ -13,7 +13,6 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     return {
       content: ':gear: 當前伺服器設定：',
       embed: {
-        description: '',
         fields: [
           {
             name: '指令前綴 `prefix`',
@@ -25,8 +24,8 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
             value: cache.settings[guildId]?.channels
               ? cache.settings[guildId].channels
                   .split(' ')
-                  .map(channelId => message.guild?.channels.cache.get(channelId))
-                  .filter(v => v)
+                  .map(channelId => message.guild?.channels.cache.get(channelId)?.name)
+                  .flat()
                   .join('\n')
               : defaultSettings.channels,
             inline: true,
@@ -36,8 +35,8 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
             value: cache.settings[guildId]?.roles
               ? cache.settings[guildId].roles
                   .split(' ')
-                  .map(roleId => message.guild?.roles.cache.get(roleId))
-                  .filter(v => v)
+                  .map(roleId => message.guild?.roles.cache.get(roleId)?.name)
+                  .flat()
                   .join('\n')
               : defaultSettings.roles,
             inline: true,
@@ -76,7 +75,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
           .filter(channel => channel instanceof VoiceChannel)
           .find(channel => channel.id === search || channel.name === search),
       )
-      .filter(v => v)
+      .flat()
     if (targetChannels.length === 0) {
       return {
         content: ':x: 找不到語音頻道',
@@ -95,7 +94,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     const targetRoles = args
       .slice(1)
       .map(search => roles?.cache.find(role => role.id === search || role.name === search))
-      .filter(v => v)
+      .flat()
     if (targetRoles.length === 0) {
       return {
         content: ':x: 找不到身份組，請輸入正確的身份組名稱（不含空格、標記）',

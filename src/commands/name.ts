@@ -10,7 +10,7 @@ const commandName: CommandProps = async ({ message, args }) => {
     }
   }
 
-  const newName = args.join('')
+  const newName = args.join('').slice(0, 20)
   await database.ref(`/names/${message.author.id}`).set(newName)
 
   return {

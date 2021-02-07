@@ -22,7 +22,6 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
     !message.guild ||
     !message.member ||
     message.channel instanceof DMChannel ||
-    message.channel instanceof NewsChannel ||
     cache.bannedGuilds[message.author.id] ||
     cache.bannedGuilds[message.guild.id]
   ) {
@@ -33,7 +32,7 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
   const prefix = cache.settings[guildId]?.prefix || 'c!'
   const mentionBotPattern = new RegExp(`<@!{0,1}${message.client.user?.id}>`)
   if (mentionBotPattern.test(message.content)) {
-    message.channel.send(':gear: 目前指令前綴：`PREFIX`'.replace('PREFIX', prefix))
+    sendResponse(message, { content: ':gear: 目前指令前綴：`PREFIX`'.replace('PREFIX', prefix) })
     return
   }
   if (!message.content.startsWith(prefix)) {
@@ -48,10 +47,10 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
 
   if (guildStatus[guildId]) {
     if (guildStatus[guildId] === 'processing') {
-      message.channel.send(':star2: 指令處理中，你需要再等一等...')
+      sendResponse(message, { content: ':star2: 指令處理中，你需要再等一等...' })
       guildStatus[guildId] = 'muted'
     } else if (guildStatus[guildId] === 'cooling-down') {
-      message.channel.send(':ice_cube: 指令冷卻中，你需要再慢一點...')
+      sendResponse(message, { content: ':ice_cube: 指令冷卻中，你需要再慢一點...' })
       guildStatus[guildId] = 'muted'
     }
     return
@@ -84,28 +83,47 @@ const sendResponse = async (
   message: Message,
   options: { content: string; embed?: MessageEmbedOptions; error?: Error },
 ) => {
-  const responseMessage = await message.channel.send(options)
+  if (message.channel instanceof DMChannel) {
+    return
+  }
 
-  const embeds: MessageEmbedOptions[] = []
-  options.embed &&
-    embeds.push({
-      ...options.embed,
-      color: 0xcc5de8,
-    })
-  options.error &&
-    embeds.push({
-      color: 0xff6b6b,
-      description: '```ERROR```'.replace('ERROR', options.error.stack || ''),
-    })
+  const responseMessage = await message.channel.send({
+    content: options.content,
+    embed: options.embed
+      ? {
+          ...options.embed,
+          title: '加入 eeBots Support（公告、更新）',
+          url: 'https://discord.gg/Ctwz4BB',
+          color: 0xcc5de8,
+        }
+      : undefined,
+  })
 
   loggerHook.send(
-    '[`TIME`] `GUILD_ID`: MESSAGE_CONTENT\n(**PROCESSING_TIME**ms) RESPONSE_CONTENT'
+    '[`TIME`] MESSAGE_CONTENT\n[`RESPONSE_TIME`] RESPONSE_CONTENT'
       .replace('TIME', moment(message.createdTimestamp).format('HH:mm:ss'))
-      .replace('GUILD_ID', `${message.guild?.id}`)
       .replace('MESSAGE_CONTENT', message.content)
-      .replace('PROCESSING_TIME', `${responseMessage.createdTimestamp - message.createdTimestamp}`)
+      .replace('RESPONSE_TIME', moment(responseMessage.createdTimestamp).format('HH:mm:ss'))
       .replace('RESPONSE_CONTENT', responseMessage.content),
-    { embeds },
+    {
+      embeds: [
+        {
+          ...options.embed,
+          color: options.error ? 0xff6b6b : 0xcc5de8,
+          fields: [
+            ...(options.embed?.fields || []),
+            {
+              name: 'Status',
+              value: options.error ? '```ERROR```'.replace('ERROR', `${options.error.stack}`) : 'SUCCESS',
+            },
+            { name: 'Guild', value: `${message.guild?.id}\n${message.guild?.name}`, inline: true },
+            { name: 'Channel', value: `${message.channel.id}\n${message.channel.name}`, inline: true },
+            { name: 'User', value: `${message.author.id}\n${message.author.tag}`, inline: true },
+          ],
+          footer: { text: `${responseMessage.createdTimestamp - message.createdTimestamp} ms` },
+        },
+      ],
+    },
   )
 }
 
