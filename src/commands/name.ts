@@ -1,5 +1,5 @@
+import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
-import { CommandProps } from '../utils/types'
 
 const commandName: CommandProps = async ({ message, args }) => {
   if (args.length === 0) {

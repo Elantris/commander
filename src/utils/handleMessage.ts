@@ -1,21 +1,22 @@
 import { DMChannel, Message, MessageEmbedOptions, NewsChannel } from 'discord.js'
 import { readdirSync } from 'fs'
+import moment from 'moment'
 import { join } from 'path'
+import { CommandProps } from '../types'
 import { cache } from './database'
 import { loggerHook } from './hooks'
-import { CommandProps } from './types'
 
 const guildStatus: { [GuildID: string]: 'processing' | 'cooling-down' | 'muted' } = {}
 const commands: { [CommandName: string]: CommandProps } = {}
 
 readdirSync(join(__dirname, '..', 'commands'))
   .filter(filename => filename.endsWith('.js') || filename.endsWith('.ts'))
-  .forEach(filename => {
+  .forEach(async filename => {
     const commandName = filename.slice(0, -3)
-    commands[commandName] = require(join(__dirname, '..', 'commands', commandName)).default
+    commands[commandName] = (await import(join(__dirname, '..', 'commands', commandName))).default
   })
 
-const handleMessage = async (message: Message) => {
+const handleMessage: (message: Message) => Promise<void> = async message => {
   if (
     message.author.bot ||
     !message.guild ||
@@ -58,14 +59,19 @@ const handleMessage = async (message: Message) => {
 
   try {
     guildStatus[guildId] = 'processing'
-    const response = await commands[commandName]({ message, guildId, args: args.slice(1) })
-    if (!response.content) {
+    const commandResult = await commands[commandName]({ message, guildId, args: args.slice(1) })
+    if (!commandResult.content) {
       throw new Error('No result content.')
     }
-    await sendResponse(message, response)
+    await sendResponse(message, commandResult)
+    if (commandResult.isSyntaxError) {
+      delete guildStatus[guildId]
+      return
+    }
   } catch (error) {
     await sendResponse(message, { content: ':fire: 發生未知的錯誤，我們會盡快修復這個問題', error })
     delete guildStatus[guildId]
+    return
   }
 
   guildStatus[guildId] = 'cooling-down'
@@ -89,17 +95,16 @@ const sendResponse = async (
   options.error &&
     embeds.push({
       color: 0xff6b6b,
-      title: options.error.message,
       description: '```ERROR```'.replace('ERROR', options.error.stack || ''),
     })
 
   loggerHook.send(
     '[`TIME`] `GUILD_ID`: MESSAGE_CONTENT\n(**PROCESSING_TIME**ms) RESPONSE_CONTENT'
-      .replace('TIME', `${message.createdTimestamp}`)
+      .replace('TIME', moment(message.createdTimestamp).format('HH:mm:ss'))
       .replace('GUILD_ID', `${message.guild?.id}`)
       .replace('MESSAGE_CONTENT', message.content)
       .replace('PROCESSING_TIME', `${responseMessage.createdTimestamp - message.createdTimestamp}`)
-      .replace('RESPONSE_CONTENT', options.content),
+      .replace('RESPONSE_CONTENT', responseMessage.content),
     { embeds },
   )
 }

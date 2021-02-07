@@ -1,6 +1,6 @@
 import { Client } from 'discord.js'
 import moment from 'moment'
-import config from '../config'
+import config from './config'
 import handleMessage from './utils/handleMessage'
 import { loggerHook } from './utils/hooks'
 

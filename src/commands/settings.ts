@@ -1,6 +1,6 @@
 import { VoiceChannel } from 'discord.js'
+import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
-import { CommandProps } from '../utils/types'
 
 const defaultSettings: { [key: string]: string } = {
   prefix: 'c!',
@@ -8,10 +8,10 @@ const defaultSettings: { [key: string]: string } = {
   roles: '@everyone',
 }
 
-const settings: CommandProps = async ({ message, guildId, args }) => {
+const commandSettings: CommandProps = async ({ message, guildId, args }) => {
   if (args.length === 0) {
     return {
-      content: ':triangular_flag_on_post: 當前伺服器設定：',
+      content: ':gear: 當前伺服器設定：',
       embed: {
         description: '',
         fields: [
@@ -25,7 +25,7 @@ const settings: CommandProps = async ({ message, guildId, args }) => {
             value: cache.settings[guildId]?.channels
               ? cache.settings[guildId].channels
                   .split(' ')
-                  .map(channelId => message.guild?.channels.cache.get(channelId)?.name || '')
+                  .map(channelId => message.guild?.channels.cache.get(channelId))
                   .filter(v => v)
                   .join('\n')
               : defaultSettings.channels,
@@ -36,7 +36,7 @@ const settings: CommandProps = async ({ message, guildId, args }) => {
             value: cache.settings[guildId]?.roles
               ? cache.settings[guildId].roles
                   .split(' ')
-                  .map(roleId => message.guild?.roles.cache.get(roleId) || '')
+                  .map(roleId => message.guild?.roles.cache.get(roleId))
                   .filter(v => v)
                   .join('\n')
               : defaultSettings.roles,
@@ -57,14 +57,14 @@ const settings: CommandProps = async ({ message, guildId, args }) => {
   if (!args[1]) {
     await database.ref(`/settings/${guildId}/${args[0]}`).remove()
     return {
-      content: `:triangular_flag_on_post: ${args[0]} 重設為預設值`,
+      content: `:gear: ${args[0]} 重設為預設值`,
     }
   }
 
   if (args[0] === 'prefix') {
     await database.ref(`/settings/${guildId}/prefix`).set(args[1])
     return {
-      content: `:triangular_flag_on_post: 指令前綴已改為：${args[1]}`,
+      content: `:gear: 指令前綴已改為：${args[1]}`,
     }
   }
 
@@ -86,9 +86,7 @@ const settings: CommandProps = async ({ message, guildId, args }) => {
 
     await database.ref(`/settings/${guildId}/channels`).set(targetChannels.map(channel => channel?.id || '').join(' '))
     return {
-      content: `:triangular_flag_on_post: 點名頻道已設定為：${targetChannels
-        .map(channel => channel?.name || '')
-        .join('、')}`,
+      content: `:gear: 點名頻道已設定為：${targetChannels.map(channel => channel?.name || '').join('、')}`,
     }
   }
 
@@ -107,7 +105,7 @@ const settings: CommandProps = async ({ message, guildId, args }) => {
 
     await database.ref(`/settings/${guildId}/roles`).set(targetRoles.map(role => role?.id || '').join(' '))
     return {
-      content: `:triangular_flag_on_post: 目標身份組已設定為：${targetRoles.map(role => role?.name || '').join('、')}`,
+      content: `:gear: 目標身份組已設定為：${targetRoles.map(role => role?.name || '').join('、')}`,
     }
   }
 
@@ -118,4 +116,4 @@ const settings: CommandProps = async ({ message, guildId, args }) => {
   }
 }
 
-export default settings
+export default commandSettings

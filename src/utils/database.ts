@@ -1,5 +1,5 @@
 import admin, { ServiceAccount } from 'firebase-admin'
-import config from '../../config'
+import config from '../config'
 
 admin.initializeApp({
   credential: admin.credential.cert(config.FIREBASE.serviceAccount as ServiceAccount),
@@ -9,7 +9,7 @@ admin.initializeApp({
 const database = admin.database()
 export const cache: {
   bannedGuilds: {
-    [GuildID: string]: any
+    [GuildID: string]: unknown
   }
   names: {
     [UserID: string]: string
