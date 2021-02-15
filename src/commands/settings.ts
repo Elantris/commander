@@ -55,7 +55,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
   if (!defaultSettings[args[0]]) {
     return {
-      content: ':x: 設定項目錯誤，正確語法：`c!settings 指定項目 設定值`',
+      content: ':x: 設定項目錯誤，正確語法：`c!settings 設定項目 設定值`',
       isSyntaxError: true,
     }
   }
@@ -85,7 +85,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
       .flat()
     if (targetChannels.length === 0) {
       return {
-        content: ':x: 找不到語音頻道',
+        content: ':x: 找不到語音頻道，或許是機器人沒有檢視語音頻道的權限？',
         isSyntaxError: true,
       }
     }
