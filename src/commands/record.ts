@@ -4,6 +4,13 @@ import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
 
 const commandRecord: CommandProps = async ({ message, guildId }) => {
+  if (!message.member?.hasPermission('ADMINISTRATOR')) {
+    return {
+      content: ':x: 這個指令限「管理員」使用',
+      isSyntaxError: true,
+    }
+  }
+
   if (!message.member?.voice.channel) {
     return {
       content: ':x: 未接聽語音頻道',
@@ -39,7 +46,9 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
     }
   }
 
-  await database.ref(`/records/${guildId}/${moment().format('YYYYMMDD')}`).set(attendedMembers.join(' '))
+  await database
+    .ref(`/records/${guildId}/${moment().format('YYYYMMDD')}`)
+    .set(attendedMembers.map(member => member.id).join(' '))
 
   return {
     content: ':triangular_flag_on_post: `DATE` 點名紀錄：'.replace('DATE', moment().format('YYYYMMDD')),

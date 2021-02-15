@@ -46,6 +46,13 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
+  if (!message.member?.hasPermission('ADMINISTRATOR')) {
+    return {
+      content: ':x: 變更設定僅限「管理員」使用',
+      isSyntaxError: true,
+    }
+  }
+
   if (!defaultSettings[args[0]]) {
     return {
       content: ':x: 設定項目錯誤，正確語法：`c!settings 指定項目 設定值`',

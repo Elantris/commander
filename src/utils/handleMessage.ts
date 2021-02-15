@@ -1,4 +1,4 @@
-import { DMChannel, Message, MessageEmbedOptions, NewsChannel } from 'discord.js'
+import { DMChannel, Message, MessageEmbedOptions } from 'discord.js'
 import { readdirSync } from 'fs'
 import moment from 'moment'
 import { join } from 'path'
@@ -94,7 +94,7 @@ const sendResponse = async (
           ...options.embed,
           title: '加入 eeBots Support（公告、更新）',
           url: 'https://discord.gg/Ctwz4BB',
-          color: 0xcc5de8,
+          color: options.error ? 0xff6b6b : 0xcc5de8,
         }
       : undefined,
   })
