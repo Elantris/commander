@@ -32,7 +32,7 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
   const prefix = cache.settings[guildId]?.prefix || 'c!'
   const mentionBotPattern = new RegExp(`<@!{0,1}${message.client.user?.id}>`)
   if (mentionBotPattern.test(message.content)) {
-    sendResponse(message, { content: ':gear: 目前指令前綴：`PREFIX`'.replace('PREFIX', prefix) })
+    sendResponse(message, { content: ':gear: 目前指令前綴：`PREFIX`\n<https://hackmd.io/@eelayntris/commander>'.replace('PREFIX', prefix) })
     return
   }
   if (!message.content.startsWith(prefix)) {

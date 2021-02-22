@@ -57,7 +57,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
       fields: [
         {
           name: `出席成員 ${attendedMembers.length} 人`,
-          value: attendedMembers.map(member => cache.names[member.id] || member.displayName.slice(0, 20)).join('、'),
+          value: attendedMembers.map(member => cache.names[member.id] || member.displayName.slice(0, 30)).join('、'),
         },
       ],
     },

@@ -69,7 +69,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
       .filter(member => !member.user.bot)
       .forEach(member => {
         attendedMembers[member.id] = {
-          name: cache.names[member.id] || member.displayName.slice(0, 20),
+          name: cache.names[member.id] || member.displayName.slice(0, 30),
           count: 0,
         }
       })
@@ -79,7 +79,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
         .filter(member => !member.user.bot || !!attendedMembers[member.id])
         .forEach(member => {
           attendedMembers[member.id] = {
-            name: cache.names[member.id] || member.displayName.slice(0, 20),
+            name: cache.names[member.id] || member.displayName.slice(0, 30),
             count: 0,
           }
         })
