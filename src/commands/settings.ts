@@ -25,7 +25,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
               ? cache.settings[guildId].channels
                   .split(' ')
                   .map(channelId => message.guild?.channels.cache.get(channelId)?.name)
-                  .flat()
+                  .filter(v => v)
                   .join('\n')
               : defaultSettings.channels,
             inline: true,
@@ -36,7 +36,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
               ? cache.settings[guildId].roles
                   .split(' ')
                   .map(roleId => message.guild?.roles.cache.get(roleId)?.name)
-                  .flat()
+                  .filter(v => v)
                   .join('\n')
               : defaultSettings.roles,
             inline: true,

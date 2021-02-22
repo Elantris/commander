@@ -17,7 +17,7 @@ client.on('ready', () => {
       .replace('USER_TAG', client.user?.tag || '')
       .replace('PREPARING_TIME', `${readyAt - startedAt}`),
   )
-  client.user?.setActivity('Update at 2021.02.22')
+  client.user?.setActivity('Update at 2021.02.23')
 })
 
 client.login(config.DISCORD.TOKEN)
