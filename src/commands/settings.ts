@@ -82,7 +82,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
           .filter(channel => channel instanceof VoiceChannel)
           .find(channel => channel.id === search || channel.name === search),
       )
-      .flat()
+      .filter(v => v)
     if (targetChannels.length === 0) {
       return {
         content: ':x: 找不到語音頻道，或許是機器人沒有檢視語音頻道的權限？',
@@ -101,7 +101,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     const targetRoles = args
       .slice(1)
       .map(search => roles?.cache.find(role => role.id === search || role.name === search))
-      .flat()
+      .filter(v => v)
     if (targetRoles.length === 0) {
       return {
         content: ':x: 找不到身份組，請輸入正確的身份組名稱（不含空格、標記）',
