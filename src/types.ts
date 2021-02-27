@@ -1,4 +1,4 @@
-import { Message, MessageEmbedOptions } from "discord.js";
+import { Message, MessageEmbedOptions } from 'discord.js'
 
 export type CommandProps = (options: {
   message: Message

@@ -11,7 +11,7 @@ const defaultSettings: { [key: string]: string } = {
 const commandSettings: CommandProps = async ({ message, guildId, args }) => {
   if (args.length === 0) {
     return {
-      content: ':gear: 當前伺服器設定：',
+      content: ':gear: 伺服器設定：',
       embed: {
         fields: [
           {

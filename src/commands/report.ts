@@ -24,13 +24,13 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   }
   if (endDate > todayDate) {
     return {
-      content: ':x: 結束日期不可在未來',
+      content: ':x: 結束日期必須在今天以前，畢竟未來的事情我也不曉得',
       isSyntaxError: true,
     }
   }
   if (moment(endDate).diff(moment(startDate), 'days') > 30) {
     return {
-      content: ':x: 查詢區間超過一個月',
+      content: ':x: 查詢區間限一個月內',
       isSyntaxError: true,
     }
   }
@@ -46,13 +46,13 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   ).val()
   await loadingMessage.delete()
 
-  const recordDates = Object.keys(rawData)
-  if (recordDates.length === 0) {
+  if (!rawData || Object.keys(rawData).length === 0) {
     return {
       content: ':x: 這段時間內沒有紀錄',
     }
   }
 
+  const recordDates = Object.keys(rawData)
   const attendedMembers: {
     [MemberID: string]: {
       name: string

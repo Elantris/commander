@@ -1,5 +1,5 @@
-import moment from 'moment'
 import { VoiceChannel } from 'discord.js'
+import moment from 'moment'
 import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
 
@@ -13,7 +13,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
 
   if (!message.member?.voice.channel) {
     return {
-      content: ':x: 未接聽語音頻道',
+      content: ':x: 請先接聽語音頻道',
       isSyntaxError: true,
     }
   }
@@ -30,7 +30,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
 
   if (targetChannels.length === 0) {
     return {
-      content: ':x: 找不到有效語音頻道',
+      content: ':x: 找不到有效語音頻道，原本設定的語音頻道好像被刪掉了？',
       isSyntaxError: true,
     }
   }

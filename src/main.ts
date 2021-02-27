@@ -17,7 +17,7 @@ client.on('ready', () => {
       .replace('USER_TAG', client.user?.tag || '')
       .replace('PREPARING_TIME', `${readyAt - startedAt}`),
   )
-  client.user?.setActivity('Update at 2021.02.23')
+  client.user?.setActivity('Update at 2021.02.27 | https://discord.gg/Ctwz4BB')
 })
 
 client.login(config.DISCORD.TOKEN)

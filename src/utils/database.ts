@@ -8,6 +8,7 @@ admin.initializeApp({
 
 const database = admin.database()
 export const cache: {
+  [key: string]: any
   bannedGuilds: {
     [GuildID: string]: unknown
   }
@@ -28,14 +29,14 @@ export const cache: {
 }
 
 const updateCache = (snapshot: admin.database.DataSnapshot) => {
-  const key = snapshot.ref.parent?.key as keyof typeof cache | null | undefined
-  if (key && snapshot.key) {
+  const key = snapshot.ref.parent?.key
+  if (key && cache[key] && snapshot.key) {
     cache[key][snapshot.key] = snapshot.val()
   }
 }
 const removeCache = (snapshot: admin.database.DataSnapshot) => {
-  const key = snapshot.ref.parent?.key as keyof typeof cache | null | undefined
-  if (key && snapshot.key) {
+  const key = snapshot.ref.parent?.key
+  if (key && cache[key] && snapshot.key) {
     delete cache[key][snapshot.key]
   }
 }

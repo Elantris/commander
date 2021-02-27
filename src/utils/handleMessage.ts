@@ -32,7 +32,12 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
   const prefix = cache.settings[guildId]?.prefix || 'c!'
   const mentionBotPattern = new RegExp(`<@!{0,1}${message.client.user?.id}>`)
   if (mentionBotPattern.test(message.content)) {
-    sendResponse(message, { content: ':gear: 目前指令前綴：`PREFIX`\n<https://hackmd.io/@eelayntris/commander>'.replace('PREFIX', prefix) })
+    sendResponse(message, {
+      content: ':triangular_flag_on_post: Commander\n指令前綴：`PREFIX`\n說明文件：<MANUAL>\n邀請連結：DISCORD'
+        .replace('PREFIX', prefix)
+        .replace('MANUAL', 'https://hackmd.io/@eelayntris/commander')
+        .replace('DISCORD', 'https://discord.gg/Ctwz4BB'),
+    })
     return
   }
   if (!message.content.startsWith(prefix)) {
@@ -68,7 +73,11 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
       return
     }
   } catch (error) {
-    await sendResponse(message, { content: ':fire: 發生未知的錯誤，我們會盡快修復這個問題', error })
+    await sendResponse(message, {
+      content:
+        ':fire: 發生未知的錯誤，我們會盡快修復這個問題，歡迎加入開發群組回報給開發者\nhttps://discord.gg/Ctwz4BB',
+      error,
+    })
     delete guildStatus[guildId]
     return
   }
