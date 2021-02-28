@@ -4,20 +4,17 @@ import config from './config'
 import handleMessage from './utils/handleMessage'
 import { loggerHook } from './utils/hooks'
 
-const startedAt = Date.now()
 const client = new Client()
 
 client.on('message', handleMessage)
 
 client.on('ready', () => {
-  const readyAt = Date.now()
+  client.user?.setActivity('Updated at 2021.03.01 | https://discord.gg/Ctwz4BB')
   loggerHook.send(
-    '[`TIME`] USER_TAG is online! (**PREPARING_TIME**ms)'
-      .replace('TIME', moment(readyAt).format('HH:mm:ss'))
-      .replace('USER_TAG', client.user?.tag || '')
-      .replace('PREPARING_TIME', `${readyAt - startedAt}`),
+    '[`TIME`] USER_TAG is online!'
+      .replace('TIME', moment().format('HH:mm:ss'))
+      .replace('USER_TAG', client.user?.tag || ''),
   )
-  client.user?.setActivity('Update at 2021.02.27 | https://discord.gg/Ctwz4BB')
 })
 
 client.login(config.DISCORD.TOKEN)

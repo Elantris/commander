@@ -33,7 +33,7 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
   const mentionBotPattern = new RegExp(`<@!{0,1}${message.client.user?.id}>`)
   if (mentionBotPattern.test(message.content)) {
     sendResponse(message, {
-      content: ':triangular_flag_on_post: Commander\n指令前綴：`PREFIX`\n說明文件：<MANUAL>\n邀請連結：DISCORD'
+      content: ':triangular_flag_on_post: Commander 點名機器人\n指令前綴：`PREFIX`\n說明文件：<MANUAL>\n邀請連結：DISCORD'
         .replace('PREFIX', prefix)
         .replace('MANUAL', 'https://hackmd.io/@eelayntris/commander')
         .replace('DISCORD', 'https://discord.gg/Ctwz4BB'),
