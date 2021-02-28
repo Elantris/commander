@@ -9,7 +9,7 @@ const defaultSettings: { [key: string]: string } = {
 }
 
 const commandSettings: CommandProps = async ({ message, guildId, args }) => {
-  if (args.length === 0) {
+  if (args.length === 1) {
     return {
       content: ':gear: 伺服器設定：',
       embed: {
@@ -53,30 +53,37 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  if (!defaultSettings[args[0]]) {
+  const item = args[1]
+  const value = args.slice(2)
+
+  if (!defaultSettings[item]) {
     return {
-      content: ':x: 設定項目錯誤，正確語法：`c!settings 設定項目 設定值`',
-      isSyntaxError: true,
+      content: ':x: 設定語法：`c!settings 設定項目 設定值`，可以設定的項目：ITEMS'.replace(
+        'ITEMS',
+        Object.keys(defaultSettings)
+          .map(key => `\`${key}\``)
+          .join(' '),
+      ),
     }
   }
 
-  if (!args[1]) {
-    await database.ref(`/settings/${guildId}/${args[0]}`).remove()
+  if (args.length === 2) {
+    await database.ref(`/settings/${guildId}/${item}`).remove()
     return {
-      content: `:gear: ${args[0]} 重設為預設值`,
+      content: `:gear: ${item} 已重設為預設值`,
     }
   }
 
-  if (args[0] === 'prefix') {
-    await database.ref(`/settings/${guildId}/prefix`).set(args[1])
+  if (item === 'prefix') {
+    const newPrefix = value[0]
+    await database.ref(`/settings/${guildId}/prefix`).set(newPrefix)
     return {
-      content: `:gear: 指令前綴已改為：${args[1]}`,
+      content: `:gear: 指令前綴已改為：${newPrefix}`,
     }
   }
 
-  if (args[0] === 'channels') {
-    const targetChannels = args
-      .slice(1)
+  if (item === 'channels') {
+    const targetChannels = value
       .map(search =>
         message.guild?.channels.cache
           .filter(channel => channel instanceof VoiceChannel)
@@ -96,10 +103,9 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  if (args[0] === 'roles') {
+  if (item === 'roles') {
     const roles = await message.guild?.roles.fetch()
-    const targetRoles = args
-      .slice(1)
+    const targetRoles = value
       .map(search => roles?.cache.find(role => role.id === search || role.name === search))
       .filter(v => v)
     if (targetRoles.length === 0) {
@@ -116,9 +122,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
   }
 
   return {
-    content: `:x: 可以設定的項目：${Object.keys(defaultSettings)
-      .map(key => `\`${key}\``)
-      .join(' ')}`,
+    content: '',
   }
 }
 

@@ -63,7 +63,7 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
 
   try {
     guildStatus[guildId] = 'processing'
-    const commandResult = await commands[commandName]({ message, guildId, args: args.slice(1) })
+    const commandResult = await commands[commandName]({ message, guildId, args })
     if (!commandResult.content) {
       throw new Error('No result content.')
     }

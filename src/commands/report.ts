@@ -13,12 +13,12 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   }
 
   const todayDate = moment(message.createdTimestamp).format('YYYYMMDD')
-  const startDate = args[0] || moment(message.createdTimestamp).subtract(6, 'days').format('YYYYMMDD')
-  const endDate = args[1] || todayDate
+  const startDate = args[1] || moment(message.createdTimestamp).subtract(6, 'days').format('YYYYMMDD')
+  const endDate = args[2] || todayDate
 
   if (!isValidDate(startDate) || !isValidDate(endDate)) {
     return {
-      content: ':x: 請輸入正確日期格式 `YYYYMMDD`',
+      content: ':x: 我只認得的日期格式為 `YYYYMMDD` （年/月/日）',
       isSyntaxError: true,
     }
   }

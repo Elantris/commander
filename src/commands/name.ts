@@ -2,7 +2,7 @@ import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
 
 const commandName: CommandProps = async ({ message, args }) => {
-  if (args.length === 0) {
+  if (args.length === 1) {
     return {
       content: ':triangular_flag_on_post: USER_TAG 的顯示名稱為：NICKNAME'
         .replace('USER_TAG', message.author.tag)
@@ -10,7 +10,7 @@ const commandName: CommandProps = async ({ message, args }) => {
     }
   }
 
-  const newName = args.join(' ').slice(0, 30)
+  const newName = args.slice(1).join(' ').slice(0, 30)
   await database.ref(`/names/${message.author.id}`).set(newName)
 
   return {

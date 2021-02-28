@@ -7,7 +7,8 @@
     "start": "npm run build && node build/main.js",
     "pm2": "pm2 start build/main.js --name commander && pm2 monit",
     "build": "rm -rf ./build/* && ./node_modules/.bin/tsc",
-    "restart": "pm2 stop commander && pm2 reset commander && pm2 start commander && pm2 monit"
+    "restart": "pm2 stop commander && pm2 reset commander && pm2 start commander && pm2 monit",
+    "dev": "ts-node src/main.ts"
   },
   "repository": {
     "type": "git",
