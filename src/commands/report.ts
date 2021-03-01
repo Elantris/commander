@@ -61,8 +61,11 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   } = {}
 
   await message.guild?.roles.fetch()
-  const targetRoles = message.guild?.roles.cache.filter(role => cache.settings[guildId]?.roles.includes(role.id))
-  const isEveryone = targetRoles?.size === 0
+  const targetRoles = cache.settings[guildId]?.roles
+    .split(' ')
+    .map(roleId => message.guild?.roles.cache.get(roleId))
+    .filter(v => v)
+  const isEveryone = targetRoles?.length === 0
   if (isEveryone) {
     await message.guild?.members.fetch()
     message.guild?.members.cache
@@ -75,8 +78,8 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
       })
   } else {
     targetRoles?.forEach(role => {
-      role.members
-        .filter(member => !member.user.bot || !!attendedMembers[member.id])
+      role?.members
+        .filter(member => !member.user.bot && !attendedMembers[member.id])
         .forEach(member => {
           attendedMembers[member.id] = {
             name: cache.names[member.id] || member.displayName.slice(0, 30),
@@ -118,15 +121,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
     embed: {
       description: '點名紀錄：DATES\n目標身份組：ROLES'
         .replace('DATES', recordDates.map(date => `\`${date}\``).join(' '))
-        .replace(
-          'ROLES',
-          isEveryone
-            ? '所有人'
-            : message.guild?.roles.cache
-                .filter(role => cache.settings[guildId].roles.includes(role.id))
-                .map(role => role.name)
-                .join(' ') || '',
-        ),
+        .replace('ROLES', isEveryone ? '所有人' : targetRoles?.map(role => role?.name).join('、') || ''),
       fields,
     },
   }
