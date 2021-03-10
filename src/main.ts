@@ -9,7 +9,7 @@ const client = new Client()
 client.on('message', handleMessage)
 
 client.on('ready', () => {
-  client.user?.setActivity('Updated at 2021.03.01 | https://discord.gg/Ctwz4BB')
+  client.user?.setActivity('Updated at 2021.03.10 | https://discord.gg/Ctwz4BB')
   loggerHook.send(
     '[`TIME`] USER_TAG is online!'
       .replace('TIME', moment().format('HH:mm:ss'))

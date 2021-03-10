@@ -22,7 +22,6 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
     !message.guild ||
     !message.member ||
     message.channel instanceof DMChannel ||
-    cache.bannedGuilds[message.author.id] ||
     cache.bannedGuilds[message.guild.id]
   ) {
     return
@@ -109,10 +108,10 @@ const sendResponse = async (
   })
 
   loggerHook.send(
-    '[`TIME`] MESSAGE_CONTENT\n[`RESPONSE_TIME`] RESPONSE_CONTENT'
+    '[`TIME`] MESSAGE_CONTENT\n(**PROCESSING_TIME**ms) RESPONSE_CONTENT'
       .replace('TIME', moment(message.createdTimestamp).format('HH:mm:ss'))
       .replace('MESSAGE_CONTENT', message.content)
-      .replace('RESPONSE_TIME', moment(responseMessage.createdTimestamp).format('HH:mm:ss'))
+      .replace('PROCESSING_TIME', `${responseMessage.createdTimestamp - message.createdTimestamp}`)
       .replace('RESPONSE_CONTENT', responseMessage.content),
     {
       embeds: [

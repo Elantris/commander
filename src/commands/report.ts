@@ -48,7 +48,9 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
 
   if (!rawData || Object.keys(rawData).length === 0) {
     return {
-      content: ':x: 這段時間內沒有紀錄',
+      content: ':x: `START_DATE` ~ `END_DATE` 這段時間內沒有紀錄'
+        .replace('START_DATE', startDate)
+        .replace('END_DATE', endDate),
     }
   }
 
@@ -60,12 +62,12 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
     }
   } = {}
 
-  await message.guild?.roles.fetch()
+  const roles = await message.guild?.roles.fetch()
   const targetRoles =
     cache.settings[guildId]?.roles
       .split(' ')
-      .map(roleId => message.guild?.roles.cache.get(roleId))
-      .reduce((accumulator, value) => (value ? [...accumulator, value] : accumulator), [] as Role[]) || []
+      .map(roleId => roles?.cache.get(roleId))
+      .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), []) || []
   const isEveryone = targetRoles.length === 0
   if (isEveryone) {
     await message.guild?.members.fetch()
@@ -73,7 +75,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
       .filter(member => !member.user.bot)
       .forEach(member => {
         attendedMembers[member.id] = {
-          name: cache.names[member.id] || member.displayName.slice(0, 30),
+          name: cache.names[member.id] || member.displayName,
           count: 0,
         }
       })
@@ -83,7 +85,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
         .filter(member => !member.user.bot && !attendedMembers[member.id])
         .forEach(member => {
           attendedMembers[member.id] = {
-            name: cache.names[member.id] || member.displayName.slice(0, 30),
+            name: cache.names[member.id] || member.displayName,
             count: 0,
           }
         })
@@ -99,7 +101,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   })
 
   const fields: EmbedFieldData[] = []
-  new Array(isEveryone ? recordDates.length : recordDates.length + 1).fill(0).forEach((_, i) => {
+  new Array(recordDates.length).fill(0).forEach((_, i) => {
     const filteredMemberIds = Object.keys(attendedMembers)
       .filter(memberId => attendedMembers[memberId].count === recordDates.length - i)
       .sort()
@@ -108,21 +110,20 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
       fields.push({
         name: filteredMemberIds.length === memberCount ? `出席 ${recordDates.length - i} 次：${memberCount} 人` : '.',
         value: filteredMemberIds
-          .splice(0, 30)
-          .map(memberId => attendedMembers[memberId].name)
+          .splice(0, 50)
+          .map(memberId => attendedMembers[memberId].name.slice(0, 16))
           .join('、'),
       })
     }
   })
 
   return {
-    content: ':triangular_flag_on_post: 出席統計 `START_DATE` ~ `END_DATE`'
+    content: ':triangular_flag_on_post: 出席統計 `START_DATE` ~ `END_DATE`\n點名紀錄：DATES\n點名對象：ROLES'
       .replace('START_DATE', startDate)
-      .replace('END_DATE', endDate),
+      .replace('END_DATE', endDate)
+      .replace('DATES', recordDates.map(date => `\`${date}\``).join(' '))
+      .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => role.name).join('、')),
     embed: {
-      description: '點名紀錄：DATES\n目標身份組：ROLES'
-        .replace('DATES', recordDates.map(date => `\`${date}\``).join(' '))
-        .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => role.name).join('、')),
       fields,
     },
   }

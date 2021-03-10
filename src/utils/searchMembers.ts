@@ -18,7 +18,7 @@ const searchMembers: (message: Message, searches: string[]) => Promise<GuildMemb
           search === member.user.tag,
       ),
     )
-    .reduce((accumulator, value) => (value ? [...accumulator, value] : accumulator), [] as GuildMember[])
+    .reduce<GuildMember[]>((accumulator, value) => (value ? [...accumulator, value] : accumulator), [])
 }
 
 export default searchMembers

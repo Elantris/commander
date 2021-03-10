@@ -1,4 +1,4 @@
 # Commander
-A discord bot to record active members in voice channels.
+A discord bot for recording active members in voice channels.
 
 https://hackmd.io/@eelayntris/commander
