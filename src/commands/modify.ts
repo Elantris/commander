@@ -1,3 +1,4 @@
+import { Util } from 'discord.js'
 import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
 import isValidDate from '../utils/isValidDate'
@@ -56,15 +57,19 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
     )
 
   return {
-    content: ':triangular_flag_on_post: 點名紀錄 DATE\n新增：ADDED_MEMBERS\n移除：REMOVED_MEMBERS'
+    content: ':triangular_flag_on_post: 點名紀錄 DATE\n新增成員：ADDED_MEMBERS\n移除成員：REMOVED_MEMBERS'
       .replace('DATE', date)
       .replace(
         'ADDED_MEMBERS',
-        addedMembers.map(member => cache.names[member.id] || member.displayName.slice(0, 30)).join('、'),
+        addedMembers
+          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName).slice(0, 16))
+          .join('、'),
       )
       .replace(
         'REMOVED_MEMBERS',
-        removedMembers.map(member => cache.names[member.id] || member.displayName.slice(0, 30)).join('、'),
+        removedMembers
+          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName).slice(0, 16))
+          .join('、'),
       ),
   }
 }

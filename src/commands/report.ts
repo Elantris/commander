@@ -1,4 +1,4 @@
-import { EmbedFieldData, Role } from 'discord.js'
+import { EmbedFieldData, Role, Util } from 'discord.js'
 import moment from 'moment'
 import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
@@ -111,7 +111,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
         name: filteredMemberIds.length === memberCount ? `出席 ${recordDates.length - i} 次：${memberCount} 人` : '.',
         value: filteredMemberIds
           .splice(0, 50)
-          .map(memberId => attendedMembers[memberId].name.slice(0, 16))
+          .map(memberId => Util.escapeMarkdown(attendedMembers[memberId].name).slice(0, 16))
           .join('、'),
       })
     }
