@@ -9,7 +9,7 @@ admin.initializeApp({
 const database = admin.database()
 export const cache: {
   [key: string]: any
-  bannedGuilds: {
+  banned: {
     [GuildID: string]: unknown
   }
   names: {
@@ -23,7 +23,7 @@ export const cache: {
     }
   }
 } = {
-  bannedGuilds: {},
+  banned: {},
   names: {},
   settings: {},
 }
@@ -41,9 +41,9 @@ const removeCache = (snapshot: admin.database.DataSnapshot) => {
   }
 }
 
-database.ref('/bannedGuilds').on('child_added', updateCache)
-database.ref('/bannedGuilds').on('child_changed', updateCache)
-database.ref('/bannedGuilds').on('child_removed', removeCache)
+database.ref('/banned').on('child_added', updateCache)
+database.ref('/banned').on('child_changed', updateCache)
+database.ref('/banned').on('child_removed', removeCache)
 database.ref('/names').on('child_added', updateCache)
 database.ref('/names').on('child_changed', updateCache)
 database.ref('/names').on('child_removed', removeCache)

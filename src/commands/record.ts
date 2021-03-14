@@ -38,7 +38,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   const attendedMembers = targetChannels
     .map(channel => channel.members.array())
     .flat()
-    .sort((a, b) => (a.id > b.id ? 1 : -1))
+    .sort()
 
   if (attendedMembers.length === 0) {
     return {
@@ -54,7 +54,6 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   const targetRoles =
     cache.settings[guildId]?.roles
       .split(' ')
-      .sort()
       .map(roleId => roles?.cache.get(roleId))
       .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), []) || []
 

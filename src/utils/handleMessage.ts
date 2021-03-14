@@ -1,8 +1,8 @@
-import { DMChannel, Message, MessageEmbedOptions } from 'discord.js'
+import { DMChannel, Message } from 'discord.js'
 import { readdirSync } from 'fs'
 import moment from 'moment'
 import { join } from 'path'
-import { CommandProps } from '../types'
+import { CommandProps, CommandResultProps } from '../types'
 import { cache } from './database'
 import { loggerHook } from './hooks'
 
@@ -19,10 +19,11 @@ readdirSync(join(__dirname, '..', 'commands'))
 const handleMessage: (message: Message) => Promise<void> = async message => {
   if (
     message.author.bot ||
+    cache.banned[message.author.id] ||
     !message.guild ||
+    cache.banned[message.guild.id] ||
     !message.member ||
-    message.channel instanceof DMChannel ||
-    cache.bannedGuilds[message.guild.id]
+    message.channel instanceof DMChannel
   ) {
     return
   }
@@ -63,7 +64,7 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
   try {
     guildStatus[guildId] = 'processing'
     const commandResult = await commands[commandName]({ message, guildId, args })
-    if (!commandResult.content) {
+    if (!commandResult.content && !commandResult.embed) {
       throw new Error('No result content.')
     }
     await sendResponse(message, commandResult)
@@ -76,7 +77,7 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
       content:
         ':fire: 發生未知的錯誤，我們會盡快修復這個問題，歡迎加入開發群組回報給開發者\nhttps://discord.gg/Ctwz4BB',
       error,
-    })
+    }).catch()
     delete guildStatus[guildId]
     return
   }
@@ -87,48 +88,44 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
   }, 3000)
 }
 
-const sendResponse = async (
-  message: Message,
-  options: { content: string; embed?: MessageEmbedOptions; error?: Error },
-) => {
+const sendResponse = async (message: Message, result: CommandResultProps) => {
   if (message.channel instanceof DMChannel) {
     return
   }
 
-  const responseMessage = await message.channel.send({
-    content: options.content,
-    embed: options.embed
-      ? {
-          ...options.embed,
-          title: '加入 eeBots Support（公告、更新）',
-          url: 'https://discord.gg/Ctwz4BB',
-          color: options.error ? 0xff6b6b : 0xcc5de8,
-        }
-      : undefined,
-  })
+  const responseMessage: Message | null = await message.channel
+    .send(result.content, {
+      embed: result.embed
+        ? {
+            ...result.embed,
+            color: 0xcc5de8,
+            title: '加入 eeBots Support（公告、更新）',
+            url: 'https://discord.gg/Ctwz4BB',
+          }
+        : undefined,
+    })
+    .catch()
 
   loggerHook.send(
-    '[`TIME`] MESSAGE_CONTENT\n(**PROCESSING_TIME**ms) RESPONSE_CONTENT'
+    '[`TIME`] MESSAGE_CONTENT\nRESPONSE_CONTENT'
       .replace('TIME', moment(message.createdTimestamp).format('HH:mm:ss'))
       .replace('MESSAGE_CONTENT', message.content)
-      .replace('PROCESSING_TIME', `${responseMessage.createdTimestamp - message.createdTimestamp}`)
-      .replace('RESPONSE_CONTENT', responseMessage.content),
+      .replace('RESPONSE_CONTENT', responseMessage?.content || ''),
     {
       embeds: [
+        ...(responseMessage?.embeds || []),
         {
-          ...options.embed,
-          color: options.error ? 0xff6b6b : 0xcc5de8,
+          color: result.error ? 0xff6b6b : undefined,
           fields: [
-            ...(options.embed?.fields || []),
             {
               name: 'Status',
-              value: options.error ? '```ERROR```'.replace('ERROR', `${options.error.stack}`) : 'SUCCESS',
+              value: result.error ? '```ERROR```'.replace('ERROR', `${result.error.stack}`) : 'SUCCESS',
             },
             { name: 'Guild', value: `${message.guild?.id}\n${message.guild?.name}`, inline: true },
             { name: 'Channel', value: `${message.channel.id}\n${message.channel.name}`, inline: true },
             { name: 'User', value: `${message.author.id}\n${message.author.tag}`, inline: true },
           ],
-          footer: { text: `${responseMessage.createdTimestamp - message.createdTimestamp} ms` },
+          footer: { text: `${(responseMessage?.createdTimestamp || Date.now()) - message.createdTimestamp} ms` },
         },
       ],
     },

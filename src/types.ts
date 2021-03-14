@@ -4,8 +4,11 @@ export type CommandProps = (options: {
   message: Message
   guildId: string
   args: string[]
-}) => Promise<{
-  content: string
+}) => Promise<CommandResultProps>
+
+export type CommandResultProps = {
+  content?: string
   embed?: MessageEmbedOptions
   isSyntaxError?: boolean
-}>
+  error?: Error
+}

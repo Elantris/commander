@@ -1,7 +1,7 @@
 import { CommandProps } from '../types'
 import { cache } from '../utils/database'
 
-const commandHelp: CommandProps = async ({ message, guildId, args }) => {
+const commandHelp: CommandProps = async ({ guildId }) => {
   const prefix = cache.settings[guildId]?.prefix || 'c!'
 
   return {

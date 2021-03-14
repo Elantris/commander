@@ -4,7 +4,7 @@ import database, { cache } from '../utils/database'
 
 const defaultSettings: { [key: string]: string } = {
   prefix: 'c!',
-  channels: '（指令使用者所在頻道）',
+  channels: '（指令使用者接聽的頻道）',
   roles: '@everyone',
 }
 
@@ -121,9 +121,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  return {
-    content: '',
-  }
+  return {}
 }
 
 export default commandSettings

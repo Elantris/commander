@@ -27,7 +27,7 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  const members = await searchMembers(message, args.slice(1))
+  const members = await searchMembers(message, args.slice(2))
   if (members.length === 0) {
     return {
       content: ':x: 找不到指定的成員',
