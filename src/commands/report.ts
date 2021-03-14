@@ -2,10 +2,11 @@ import { EmbedFieldData, Role, Util } from 'discord.js'
 import moment from 'moment'
 import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
+import isAdmin from '../utils/isAdmin'
 import isValidDate from '../utils/isValidDate'
 
 const commandReport: CommandProps = async ({ message, guildId, args }) => {
-  if (!message.member?.hasPermission('ADMINISTRATOR')) {
+  if (!isAdmin(message.member)) {
     return {
       content: ':x: 這個指令限「管理員」使用',
       isSyntaxError: true,
@@ -19,12 +20,6 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   if (!isValidDate(startDate) || !isValidDate(endDate)) {
     return {
       content: ':x: 我只認得的日期格式為 `YYYYMMDD` （年/月/日）',
-      isSyntaxError: true,
-    }
-  }
-  if (endDate > todayDate) {
-    return {
-      content: ':x: 結束日期必須在今天以前，畢竟未來的事情我也不曉得',
       isSyntaxError: true,
     }
   }
@@ -65,7 +60,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   const roles = await message.guild?.roles.fetch()
   const targetRoles =
     cache.settings[guildId]?.roles
-      .split(' ')
+      ?.split(' ')
       .map(roleId => roles?.cache.get(roleId))
       .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), []) || []
   const isEveryone = targetRoles.length === 0

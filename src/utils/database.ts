@@ -10,16 +10,17 @@ const database = admin.database()
 export const cache: {
   [key: string]: any
   banned: {
-    [GuildID: string]: unknown
+    [GuildID: string]: any
   }
   names: {
     [UserID: string]: string
   }
   settings: {
     [GuildID: string]: {
-      channels: string
-      roles: string
-      prefix: string
+      channels?: string
+      roles?: string
+      prefix?: string
+      admins?: string
     }
   }
 } = {

@@ -1,11 +1,12 @@
 import { Util } from 'discord.js'
 import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
+import isAdmin from '../utils/isAdmin'
 import isValidDate from '../utils/isValidDate'
 import searchMembers from '../utils/searchMembers'
 
 const commandModify: CommandProps = async ({ message, guildId, args }) => {
-  if (!message.member?.hasPermission('ADMINISTRATOR')) {
+  if (!isAdmin(message.member)) {
     return {
       content: ':x: 這個指令限「管理員」使用',
       isSyntaxError: true,

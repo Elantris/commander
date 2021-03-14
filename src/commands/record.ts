@@ -2,9 +2,10 @@ import { Role, Util, VoiceChannel } from 'discord.js'
 import moment from 'moment'
 import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
+import isAdmin from '../utils/isAdmin'
 
 const commandRecord: CommandProps = async ({ message, guildId }) => {
-  if (!message.member?.hasPermission('ADMINISTRATOR')) {
+  if (!isAdmin(message.member)) {
     return {
       content: ':x: 這個指令限「管理員」使用',
       isSyntaxError: true,
@@ -19,14 +20,12 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   }
 
   const targetChannels: VoiceChannel[] = cache.settings[guildId]?.channels
-    ? cache.settings[guildId].channels
-        .split(' ')
-        .map(channelId => message.guild?.channels.cache.get(channelId))
-        .reduce<VoiceChannel[]>(
-          (accumulator, channel) => (channel instanceof VoiceChannel ? [...accumulator, channel] : accumulator),
-          [],
-        )
-    : [message.member.voice.channel]
+    ?.split(' ')
+    .map(channelId => message.guild?.channels.cache.get(channelId))
+    .reduce<VoiceChannel[]>(
+      (accumulator, channel) => (channel instanceof VoiceChannel ? [...accumulator, channel] : accumulator),
+      [],
+    ) || [message.member.voice.channel]
 
   if (targetChannels.length === 0) {
     return {
@@ -53,7 +52,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   const roles = await message.guild?.roles.fetch()
   const targetRoles =
     cache.settings[guildId]?.roles
-      .split(' ')
+      ?.split(' ')
       .map(roleId => roles?.cache.get(roleId))
       .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), []) || []
 
