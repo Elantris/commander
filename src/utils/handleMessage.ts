@@ -22,7 +22,6 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
     cache.banned[message.author.id] ||
     !message.guild ||
     cache.banned[message.guild.id] ||
-    !message.member ||
     message.channel instanceof DMChannel
   ) {
     return
@@ -30,16 +29,6 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
 
   const guildId = message.guild.id
   const prefix = cache.settings[guildId]?.prefix || 'c!'
-  const mentionBotPattern = new RegExp(`<@!{0,1}${message.client.user?.id}>`)
-  if (mentionBotPattern.test(message.content)) {
-    sendResponse(message, {
-      content: ':triangular_flag_on_post: Commander 點名機器人\n指令前綴：`PREFIX`\n說明文件：<MANUAL>\n邀請連結：DISCORD'
-        .replace('PREFIX', prefix)
-        .replace('MANUAL', 'https://hackmd.io/@eelayntris/commander')
-        .replace('DISCORD', 'https://discord.gg/Ctwz4BB'),
-    })
-    return
-  }
   if (!message.content.startsWith(prefix)) {
     return
   }
@@ -74,10 +63,9 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
     }
   } catch (error) {
     await sendResponse(message, {
-      content:
-        ':fire: 發生未知的錯誤，我們會盡快修復這個問題，歡迎加入開發群組回報給開發者\nhttps://discord.gg/Ctwz4BB',
+      content: ':fire: 發生未知的錯誤，歡迎加入開發群組回報問題\nhttps://discord.gg/Ctwz4BB',
       error,
-    }).catch()
+    })
     delete guildStatus[guildId]
     return
   }
@@ -106,30 +94,32 @@ const sendResponse = async (message: Message, result: CommandResultProps) => {
     })
     .catch()
 
-  loggerHook.send(
-    '[`TIME`] MESSAGE_CONTENT\nRESPONSE_CONTENT'
-      .replace('TIME', moment(message.createdTimestamp).format('HH:mm:ss'))
-      .replace('MESSAGE_CONTENT', message.content)
-      .replace('RESPONSE_CONTENT', responseMessage?.content || ''),
-    {
-      embeds: [
-        ...(responseMessage?.embeds || []),
-        {
-          color: result.error ? 0xff6b6b : undefined,
-          fields: [
-            {
-              name: 'Status',
-              value: result.error ? '```ERROR```'.replace('ERROR', `${result.error.stack}`) : 'SUCCESS',
-            },
-            { name: 'Guild', value: `${message.guild?.id}\n${message.guild?.name}`, inline: true },
-            { name: 'Channel', value: `${message.channel.id}\n${message.channel.name}`, inline: true },
-            { name: 'User', value: `${message.author.id}\n${message.author.tag}`, inline: true },
-          ],
-          footer: { text: `${(responseMessage?.createdTimestamp || Date.now()) - message.createdTimestamp} ms` },
-        },
-      ],
-    },
-  )
+  loggerHook
+    .send(
+      '[`TIME`] MESSAGE_CONTENT\nRESPONSE_CONTENT'
+        .replace('TIME', moment(message.createdTimestamp).format('HH:mm:ss'))
+        .replace('MESSAGE_CONTENT', message.content)
+        .replace('RESPONSE_CONTENT', responseMessage?.content || ''),
+      {
+        embeds: [
+          ...(responseMessage?.embeds || []),
+          {
+            color: result.error ? 0xff6b6b : undefined,
+            fields: [
+              {
+                name: 'Status',
+                value: result.error ? '```ERROR```'.replace('ERROR', `${result.error.stack}`) : 'SUCCESS',
+              },
+              { name: 'Guild', value: `${message.guild?.id}\n${message.guild?.name}`, inline: true },
+              { name: 'Channel', value: `${message.channel.id}\n${message.channel.name}`, inline: true },
+              { name: 'User', value: `${message.author.id}\n${message.author.tag}`, inline: true },
+            ],
+            footer: { text: `${(responseMessage?.createdTimestamp || Date.now()) - message.createdTimestamp} ms` },
+          },
+        ],
+      },
+    )
+    .catch()
 }
 
 export default handleMessage

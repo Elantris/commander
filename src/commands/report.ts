@@ -30,12 +30,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  const loadingMessage = await message.channel.send({
-    embed: {
-      color: 0xda77f2,
-      description: ':triangular_flag_on_post: 讀取紀錄中 . . .',
-    },
-  })
+  const loadingMessage = await message.channel.send(':triangular_flag_on_post: 讀取紀錄中...')
   const rawData: { [Date: string]: string } = (
     await database.ref(`/records/${guildId}`).orderByKey().startAt(startDate).endAt(endDate).once('value')
   ).val()
