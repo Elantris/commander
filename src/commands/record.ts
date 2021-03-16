@@ -55,13 +55,15 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
       ?.split(' ')
       .map(roleId => roles?.cache.get(roleId))
       .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), []) || []
-  const targetMembers = attendedMembers.filter(member => targetRoles.some(role => member.roles.cache.get(role.id)))
+  const targetMembers = attendedMembers.filter(
+    member => targetRoles.length === 0 || targetRoles.some(role => member.roles.cache.get(role.id)),
+  )
 
   return {
     content: ':triangular_flag_on_post: 點名紀錄 `DATE`\n點名頻道：CHANNELS\n點名對象：ROLES'
       .replace('DATE', moment(message.createdTimestamp).format('YYYYMMDD'))
       .replace('CHANNELS', targetChannels.map(channel => channel.name).join('、'))
-      .replace('ROLES', targetRoles.map(role => role.name).join('、')),
+      .replace('ROLES', targetRoles.map(role => role.name).join('、') || '（所有人）'),
     embed: {
       fields: targetMembers
         .reduce<string[][]>((accumulator, member, index) => {
