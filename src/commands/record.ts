@@ -35,9 +35,9 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   }
 
   const attendedMembers = targetChannels
-    .map(channel => channel.members.array())
+    .map(channel => channel.members.filter(member => !member.user.bot).array())
     .flat()
-    .sort()
+    .sort((a, b) => (a.id > b.id ? 1 : -1))
 
   if (attendedMembers.length === 0) {
     return {

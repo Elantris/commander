@@ -83,11 +83,11 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   }
 
   Object.values(rawData).forEach(v => {
-    v.split(' ')
-      .filter(memberId => !!attendedMembers[memberId])
-      .forEach(memberId => {
+    v.split(' ').forEach(memberId => {
+      if (attendedMembers[memberId]) {
         attendedMembers[memberId].count += 1
-      })
+      }
+    })
   })
 
   const fields: EmbedFieldData[] = []
