@@ -43,14 +43,14 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
   }
 
   const recordedMemberIds = record.split(' ')
-  const addedMembers = members.filter(member => record.includes(member.id))
-  const removedMembers = members.filter(member => !record.includes(member.id))
+  const addedMembers = members.filter(member => !record.includes(member.id))
+  const removedMembers = members.filter(member => record.includes(member.id))
 
   await database
     .ref(`/records/${guildId}/${date}`)
     .set(
       [
-        ...recordedMemberIds.filter(id => removedMembers.some(member => member.id === id)),
+        ...recordedMemberIds.filter(id => !removedMembers.some(member => member.id === id)),
         ...addedMembers.map(member => member.id),
       ]
         .sort()

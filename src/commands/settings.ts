@@ -45,7 +45,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
                 ?.split(' ')
                 .map(roleId => message.guild?.roles.cache.get(roleId)?.name)
                 .reduce<string[]>((accumulator, value) => (value ? [...accumulator, value] : accumulator), [])
-                .join('\n') || defaultSettings.admin,
+                .join('\n') || defaultSettings.admins,
           },
         ],
       },
