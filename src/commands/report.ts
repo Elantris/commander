@@ -19,11 +19,11 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
 
   if (!isValidDate(startDate) || !isValidDate(endDate)) {
     return {
-      content: ':x: 我只認得的日期格式為 `YYYYMMDD` （年/月/日）',
+      content: ':x: 我只認識的日期格式為 `YYYYMMDD` （年/月/日）',
       isSyntaxError: true,
     }
   }
-  if (moment(endDate).diff(moment(startDate), 'days') > 30) {
+  if (moment(endDate).diff(moment(startDate), 'days') > 31) {
     return {
       content: ':x: 查詢區間限一個月內',
       isSyntaxError: true,
@@ -31,7 +31,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   }
 
   const loadingMessage = await message.channel.send(':triangular_flag_on_post: 讀取紀錄中...')
-  const rawData: { [Date: string]: string } = (
+  const rawData: { [Date: string]: string } | undefined = (
     await database.ref(`/records/${guildId}`).orderByKey().startAt(startDate).endAt(endDate).once('value')
   ).val()
   await loadingMessage.delete()

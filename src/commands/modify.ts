@@ -35,7 +35,7 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  const record: string | undefined = await (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
+  const record: string | undefined = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
   if (!record) {
     return {
       content: `:x: ${date} 這天沒有點名紀錄`,

@@ -9,7 +9,7 @@ const client = new Client()
 client.on('message', handleMessage)
 
 client.on('ready', () => {
-  client.user?.setActivity('Version 2021.03.20 | https://discord.gg/Ctwz4BB')
+  client.user?.setActivity('Version 2021.04.05 | https://discord.gg/Ctwz4BB')
   loggerHook.send(
     '[`TIME`] USER_TAG'.replace('TIME', moment().format('HH:mm:ss')).replace('USER_TAG', client.user?.tag || ''),
   )

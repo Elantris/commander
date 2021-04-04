@@ -45,9 +45,8 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
     }
   }
 
-  await database
-    .ref(`/records/${guildId}/${moment(message.createdTimestamp).format('YYYYMMDD')}`)
-    .set(attendedMembers.map(member => member.id).join(' '))
+  const date = moment(message.createdTimestamp).format('YYYYMMDD')
+  await database.ref(`/records/${guildId}/${date}`).set(attendedMembers.map(member => member.id).join(' '))
 
   const roles = await message.guild?.roles.fetch()
   const targetRoles =
@@ -55,15 +54,16 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
       ?.split(' ')
       .map(roleId => roles?.cache.get(roleId))
       .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), []) || []
+  const isEveryone = targetRoles.length === 0
   const targetMembers = attendedMembers.filter(
-    member => targetRoles.length === 0 || targetRoles.some(role => member.roles.cache.get(role.id)),
+    member => isEveryone || targetRoles.some(role => member.roles.cache.get(role.id)),
   )
 
   return {
     content: ':triangular_flag_on_post: 點名紀錄 `DATE`\n點名頻道：CHANNELS\n點名對象：ROLES'
-      .replace('DATE', moment(message.createdTimestamp).format('YYYYMMDD'))
+      .replace('DATE', date)
       .replace('CHANNELS', targetChannels.map(channel => channel.name).join('、'))
-      .replace('ROLES', targetRoles.map(role => role.name).join('、') || '（所有人）'),
+      .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => role.name).join('、')),
     embed: {
       fields: targetMembers
         .reduce<string[][]>((accumulator, member, index) => {

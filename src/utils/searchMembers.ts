@@ -15,7 +15,8 @@ const searchMembers: (message: Message, searches: string[]) => Promise<GuildMemb
           search === cache.names[member.id] ||
           search === member.displayName ||
           search === member.user.username ||
-          search === member.user.tag,
+          search === member.user.tag ||
+          search.includes(member.id),
       ),
     )
     .reduce<GuildMember[]>((accumulator, value) => (value ? [...accumulator, value] : accumulator), [])

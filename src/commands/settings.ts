@@ -3,11 +3,13 @@ import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
 import isAdmin from '../utils/isAdmin'
 
-const defaultSettings: { [key: string]: string } = {
+const defaultSettings: {
+  [key: string]: string
+} = {
   prefix: 'c!',
-  channels: '（指令使用者接聽的頻道）',
-  roles: '@everyone',
-  admins: '（擁有管理權限的身份組）',
+  channels: '指令使用者接聽的頻道',
+  roles: '所有人',
+  admins: '擁有管理權限的身份組',
 }
 
 const commandSettings: CommandProps = async ({ message, guildId, args }) => {
@@ -77,7 +79,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
   if (args.length === 2) {
     await database.ref(`/settings/${guildId}/${settingKey}`).remove()
     return {
-      content: `:gear: ${settingKey} 已重設為預設值`,
+      content: `:gear: ${settingKey} 已重設為預設值：${defaultSettings[settingKey]}`,
     }
   }
 
@@ -111,12 +113,12 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
   if (settingKey === 'roles' || settingKey === 'admins') {
     const roles = await message.guild?.roles.fetch()
     const targetRoles = settingValues
-      .map(search => roles?.cache.find(role => role.id === search || role.name === search))
+      .map(search => roles?.cache.find(role => role.id === search || role.name === search || search.includes(role.id)))
       .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), [])
 
     if (targetRoles.length === 0) {
       return {
-        content: ':x: 找不到身份組，請輸入正確的身份組名稱（不含空格、標記）',
+        content: ':x: 找不到身份組，請輸入正確的身份組名稱（不含空格）',
         isSyntaxError: true,
       }
     }
