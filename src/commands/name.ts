@@ -14,13 +14,13 @@ const commandName: CommandProps = async ({ message, args }) => {
     }
   }
 
-  const newName = Util.escapeMarkdown(args[1].slice(0, 16))
+  const newName = args[1].slice(0, 16)
   await database.ref(`/names/${message.author.id}`).set(newName)
 
   return {
     content: ':triangular_flag_on_post: USER_TAG 的顯示名稱已改為：NICKNAME'
       .replace('USER_TAG', message.author.tag)
-      .replace('NICKNAME', newName)
+      .replace('NICKNAME', Util.escapeMarkdown(newName))
       .trim(),
   }
 }
