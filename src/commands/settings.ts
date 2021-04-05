@@ -1,4 +1,4 @@
-import { Role, VoiceChannel } from 'discord.js'
+import { Role, Util, VoiceChannel } from 'discord.js'
 import { CommandProps } from '../types'
 import database, { cache } from '../utils/database'
 import isAdmin from '../utils/isAdmin'
@@ -20,7 +20,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
         fields: [
           {
             name: '指令前綴 `prefix`',
-            value: cache.settings[guildId]?.prefix || defaultSettings.prefix,
+            value: Util.escapeMarkdown(cache.settings[guildId]?.prefix || defaultSettings.prefix),
           },
           {
             name: '點名頻道 `channels`',
@@ -28,7 +28,10 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
               cache.settings[guildId]?.channels
                 ?.split(' ')
                 .map(channelId => message.guild?.channels.cache.get(channelId)?.name)
-                .reduce<string[]>((accumulator, value) => (value ? [...accumulator, value] : accumulator), [])
+                .reduce<string[]>(
+                  (accumulator, value) => (value ? [...accumulator, Util.escapeMarkdown(value)] : accumulator),
+                  [],
+                )
                 .join('\n') || defaultSettings.channels,
           },
           {
@@ -37,7 +40,10 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
               cache.settings[guildId]?.roles
                 ?.split(' ')
                 .map(roleId => message.guild?.roles.cache.get(roleId)?.name)
-                .reduce<string[]>((accumulator, value) => (value ? [...accumulator, value] : accumulator), [])
+                .reduce<string[]>(
+                  (accumulator, value) => (value ? [...accumulator, Util.escapeMarkdown(value)] : accumulator),
+                  [],
+                )
                 .join('\n') || defaultSettings.roles,
           },
           {
@@ -46,7 +52,10 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
               cache.settings[guildId]?.admins
                 ?.split(' ')
                 .map(roleId => message.guild?.roles.cache.get(roleId)?.name)
-                .reduce<string[]>((accumulator, value) => (value ? [...accumulator, value] : accumulator), [])
+                .reduce<string[]>(
+                  (accumulator, value) => (value ? [...accumulator, Util.escapeMarkdown(value)] : accumulator),
+                  [],
+                )
                 .join('\n') || defaultSettings.admins,
           },
         ],
@@ -87,7 +96,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     const newPrefix = settingValues[0]
     await database.ref(`/settings/${guildId}/prefix`).set(newPrefix)
     return {
-      content: `:gear: 指令前綴已改為：${newPrefix}`,
+      content: `:gear: 指令前綴已改為：${Util.escapeMarkdown(newPrefix)}`,
     }
   }
 
@@ -106,7 +115,9 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
     await database.ref(`/settings/${guildId}/channels`).set(targetChannels.map(channel => channel.id).join(' '))
     return {
-      content: `:gear: 點名頻道已設定為：${targetChannels.map(channel => channel.name).join('、')}`,
+      content: `:gear: 點名頻道已設定為：${targetChannels
+        .map(channel => Util.escapeMarkdown(channel.name))
+        .join('、')}`,
     }
   }
 
@@ -127,7 +138,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     return {
       content: `:gear: SETTING_KEY 已設定為：ROLES`
         .replace('SETTING_KEY', settingKey === 'roles' ? '點名對象' : settingKey === 'admins' ? '點名隊長' : settingKey)
-        .replace('ROLES', targetRoles.map(role => role.name).join('、')),
+        .replace('ROLES', targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
     }
   }
 

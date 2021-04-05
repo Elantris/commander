@@ -30,6 +30,11 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
 
   const guildId = message.guild.id
   const prefix = cache.settings[guildId]?.prefix || 'c!'
+  const mentionBotPattern = new RegExp(`<@!{0,1}${message.client.user?.id}>`)
+  if (mentionBotPattern.test(message.content)) {
+    message.channel.send(':gear: 指令前綴：`PREFIX`'.replace('PREFIX', Util.escapeMarkdown(prefix)))
+    return
+  }
   if (!message.content.startsWith(prefix)) {
     return
   }

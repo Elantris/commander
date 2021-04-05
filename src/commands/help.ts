@@ -1,3 +1,4 @@
+import { Util } from 'discord.js'
 import { CommandProps } from '../types'
 import { cache } from '../utils/database'
 
@@ -6,7 +7,7 @@ const commandHelp: CommandProps = async ({ guildId }) => {
 
   return {
     content: ':triangular_flag_on_post: Commander 點名機器人\n指令前綴：`PREFIX`\n說明文件：<MANUAL>\n邀請連結：DISCORD\n\n點名紀錄：`record`、`report`、`modify`\n基本設定：`name`、`settings`'
-      .replace('PREFIX', prefix)
+      .replace('PREFIX', Util.escapeMarkdown(prefix))
       .replace('MANUAL', 'https://hackmd.io/@eelayntris/commander')
       .replace('DISCORD', 'https://discord.gg/Ctwz4BB'),
   }

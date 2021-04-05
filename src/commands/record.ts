@@ -41,7 +41,9 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
 
   if (attendedMembers.length === 0) {
     return {
-      content: `:x: 語音頻道內好像沒有人？點名頻道：${targetChannels.map(channel => channel.name).join('、')}`,
+      content: `:x: 語音頻道內好像沒有人？點名頻道：${targetChannels
+        .map(channel => Util.escapeMarkdown(channel.name))
+        .join('、')}`,
     }
   }
 
@@ -62,8 +64,8 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   return {
     content: ':triangular_flag_on_post: 點名紀錄 `DATE`\n點名頻道：CHANNELS\n點名對象：ROLES'
       .replace('DATE', date)
-      .replace('CHANNELS', targetChannels.map(channel => channel.name).join('、'))
-      .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => role.name).join('、')),
+      .replace('CHANNELS', targetChannels.map(channel => Util.escapeMarkdown(channel.name)).join('、'))
+      .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
     embed: {
       fields: targetMembers
         .reduce<string[][]>((accumulator, member, index) => {
@@ -71,12 +73,12 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
           if (index % 50 === 0) {
             accumulator[page] = []
           }
-          accumulator[page].push(cache.names[member.id] || member.displayName)
+          accumulator[page].push(cache.names[member.id] || member.displayName.slice(0, 16))
           return accumulator
         }, [])
         .map((names, index) => ({
           name: index === 0 ? `出席成員 ${targetMembers.length} 人` : '.',
-          value: names.map(name => Util.escapeMarkdown(name).slice(0, 16)).join('、'),
+          value: names.map(name => Util.escapeMarkdown(name)).join('、'),
         })),
     },
   }

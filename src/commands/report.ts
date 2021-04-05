@@ -65,7 +65,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
       .filter(member => !member.user.bot)
       .forEach(member => {
         attendedMembers[member.id] = {
-          name: cache.names[member.id] || member.displayName,
+          name: cache.names[member.id] || member.displayName.slice(0, 16),
           count: 0,
         }
       })
@@ -75,7 +75,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
         .filter(member => !member.user.bot && !attendedMembers[member.id])
         .forEach(member => {
           attendedMembers[member.id] = {
-            name: cache.names[member.id] || member.displayName,
+            name: cache.names[member.id] || member.displayName.slice(0, 16),
             count: 0,
           }
         })
@@ -101,7 +101,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
         name: filteredMemberIds.length === memberCount ? `出席 ${recordDates.length - i} 次：${memberCount} 人` : '.',
         value: filteredMemberIds
           .splice(0, 50)
-          .map(memberId => Util.escapeMarkdown(attendedMembers[memberId].name).slice(0, 16))
+          .map(memberId => Util.escapeMarkdown(attendedMembers[memberId].name))
           .join('、'),
       })
     }
@@ -112,7 +112,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
       .replace('START_DATE', startDate)
       .replace('END_DATE', endDate)
       .replace('DATES', recordDates.map(date => `\`${date}\``).join(' '))
-      .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => role.name).join('、')),
+      .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
     embed: {
       fields,
     },

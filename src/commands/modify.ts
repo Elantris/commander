@@ -63,13 +63,13 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
       .replace(
         'ADDED_MEMBERS',
         addedMembers
-          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName).slice(0, 16))
+          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName.slice(0, 16)))
           .join('、'),
       )
       .replace(
         'REMOVED_MEMBERS',
         removedMembers
-          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName).slice(0, 16))
+          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName.slice(0, 16)))
           .join('、'),
       ),
   }
