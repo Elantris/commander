@@ -1,6 +1,6 @@
 import { Role, Util, VoiceChannel } from 'discord.js'
 import { CommandProps } from '../types'
-import database, { cache } from '../utils/database'
+import cache, { database } from '../utils/cache'
 import isAdmin from '../utils/isAdmin'
 
 const defaultSettings: {
@@ -102,14 +102,18 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
   if (settingKey === 'channels') {
     const targetChannels = settingValues
-      .map(search => message.guild?.channels.cache.find(channel => channel.id === search || channel.name === search))
+      .map(search =>
+        message.guild?.channels.cache
+          .filter(channel => channel instanceof VoiceChannel)
+          .find(channel => channel.id === search || channel.name === search),
+      )
       .reduce<VoiceChannel[]>(
         (accumulator, channel) => (channel instanceof VoiceChannel ? [...accumulator, channel] : accumulator),
         [],
       )
     if (targetChannels.length === 0) {
       return {
-        content: ':x: 找不到語音頻道，或許是機器人沒有檢視語音頻道的權限？',
+        content: ':x: 找不到語音頻道，或許是頻道名稱怪怪的，可以嘗試換成頻道 ID',
       }
     }
 

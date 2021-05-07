@@ -1,6 +1,6 @@
 import { Util } from 'discord.js'
 import { CommandProps } from '../types'
-import { cache } from '../utils/database'
+import cache from '../utils/cache'
 
 const commandHelp: CommandProps = async ({ guildId }) => {
   const prefix = cache.settings[guildId]?.prefix || 'c!'

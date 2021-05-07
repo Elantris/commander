@@ -1,5 +1,5 @@
 import { GuildMember, Message } from 'discord.js'
-import { cache } from './database'
+import cache from '../utils/cache'
 
 const searchMembers: (message: Message, searches: string[]) => Promise<GuildMember[]> = async (message, searches) => {
   if (!message.guild) {

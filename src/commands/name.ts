@@ -1,6 +1,6 @@
 import { Util } from 'discord.js'
 import { CommandProps } from '../types'
-import database, { cache } from '../utils/database'
+import cache, { database } from '../utils/cache'
 
 const commandName: CommandProps = async ({ message, args }) => {
   if (args.length === 1) {

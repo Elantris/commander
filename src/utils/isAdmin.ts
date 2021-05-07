@@ -1,5 +1,5 @@
 import { GuildMember } from 'discord.js'
-import { cache } from './database'
+import cache from './cache'
 
 const isAdmin = (member: GuildMember | null | undefined) => {
   if (!member) {

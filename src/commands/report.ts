@@ -1,7 +1,7 @@
 import { EmbedFieldData, Role, Util } from 'discord.js'
 import moment from 'moment'
 import { CommandProps } from '../types'
-import database, { cache } from '../utils/database'
+import cache, { database } from '../utils/cache'
 import isAdmin from '../utils/isAdmin'
 import isValidDate from '../utils/isValidDate'
 

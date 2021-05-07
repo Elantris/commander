@@ -6,8 +6,8 @@ admin.initializeApp({
   databaseURL: config.FIREBASE.databaseURL,
 })
 
-const database = admin.database()
-export const cache: {
+export const database = admin.database()
+const cache: {
   [key: string]: any
   banned: {
     [GuildID in string]: any
@@ -59,4 +59,4 @@ database.ref('/hints').on('child_added', updateCache)
 database.ref('/hints').on('child_changed', updateCache)
 database.ref('/hints').on('child_removed', removeCache)
 
-export default database
+export default cache
