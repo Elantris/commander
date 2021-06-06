@@ -65,7 +65,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
   if (!isAdmin(message.member)) {
     return {
-      content: ':x: 變更設定僅限「管理員」使用',
+      content: ':lock: 變更設定僅限「管理員」使用',
       isSyntaxError: true,
     }
   }

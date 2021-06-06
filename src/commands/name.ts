@@ -4,13 +4,11 @@ import cache, { database } from '../utils/cache'
 
 const commandName: CommandProps = async ({ message, args }) => {
   if (args.length === 1) {
+    if (cache.names[message.author.id]) {
+      await database.ref(`/names/${message.author.id}`).remove()
+    }
     return {
-      content: ':triangular_flag_on_post: USER_TAG 的顯示名稱為：NICKNAME'
-        .replace('USER_TAG', message.author.tag)
-        .replace(
-          'NICKNAME',
-          Util.escapeMarkdown(cache.names[message.author.id] || message.member?.displayName.slice(0, 16) || ''),
-        ),
+      content: ':triangular_flag_on_post: 已重設 USER_TAG 的顯示名稱'.replace('USER_TAG', message.author.tag),
     }
   }
 
@@ -18,7 +16,7 @@ const commandName: CommandProps = async ({ message, args }) => {
   await database.ref(`/names/${message.author.id}`).set(newName)
 
   return {
-    content: ':triangular_flag_on_post: USER_TAG 的顯示名稱已改為：NICKNAME'
+    content: ':triangular_flag_on_post: USER_TAG 的顯示名稱已設定為：NICKNAME'
       .replace('USER_TAG', message.author.tag)
       .replace('NICKNAME', Util.escapeMarkdown(newName))
       .trim(),

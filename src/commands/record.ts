@@ -1,4 +1,4 @@
-import { Role, Util, VoiceChannel } from 'discord.js'
+import { GuildMember, Role, Util, VoiceChannel } from 'discord.js'
 import moment from 'moment'
 import { CommandProps } from '../types'
 import cache, { database } from '../utils/cache'
@@ -7,7 +7,7 @@ import isAdmin from '../utils/isAdmin'
 const commandRecord: CommandProps = async ({ message, guildId }) => {
   if (!isAdmin(message.member)) {
     return {
-      content: ':x: 這個指令限「管理員」使用',
+      content: ':lock: 這個指令限「管理員」使用',
       isSyntaxError: true,
     }
   }
@@ -19,7 +19,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
     }
   }
 
-  const targetChannels: VoiceChannel[] = cache.settings[guildId]?.channels
+  const targetChannels = cache.settings[guildId]?.channels
     ?.split(' ')
     .map(channelId => message.guild?.channels.cache.get(channelId))
     .reduce<VoiceChannel[]>(
@@ -29,19 +29,21 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
 
   if (targetChannels.length === 0) {
     return {
-      content: ':x: 找不到有效語音頻道，原本設定的語音頻道好像被刪掉了？',
+      content: ':question: 找不到有效語音頻道，原本設定的語音頻道好像被刪掉了？',
       isSyntaxError: true,
     }
   }
 
   const attendedMembers = targetChannels
-    .map(channel => channel.members.filter(member => !member.user.bot).array())
-    .flat()
+    .reduce<GuildMember[]>(
+      (accumulator, channel) => [...accumulator, ...channel.members.filter(m => !m.user.bot).array()],
+      [],
+    )
     .sort((a, b) => (a.id > b.id ? 1 : -1))
 
   if (attendedMembers.length === 0) {
     return {
-      content: `:x: 語音頻道內好像沒有人？點名頻道：${targetChannels
+      content: `:question: 語音頻道內好像沒有人？點名頻道：${targetChannels
         .map(channel => Util.escapeMarkdown(channel.name))
         .join('、')}`,
     }
@@ -62,7 +64,8 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   )
 
   return {
-    content: ':triangular_flag_on_post: 點名紀錄 `DATE`\n點名頻道：CHANNELS\n點名對象：ROLES'
+    content: ':triangular_flag_on_post: **GUILD_NAME**\n點名日期：`DATE`\n點名頻道：CHANNELS\n點名對象：ROLES'
+      .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
       .replace('DATE', date)
       .replace('CHANNELS', targetChannels.map(channel => Util.escapeMarkdown(channel.name)).join('、'))
       .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
@@ -73,7 +76,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
           if (index % 50 === 0) {
             accumulator[page] = []
           }
-          accumulator[page].push(cache.names[member.id] || member.displayName.slice(0, 16))
+          accumulator[page].push((cache.names[member.id] || member.displayName).slice(0, 16))
           return accumulator
         }, [])
         .map((names, index) => ({

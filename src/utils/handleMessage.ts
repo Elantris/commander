@@ -17,30 +17,20 @@ readdirSync(join(__dirname, '..', 'commands'))
     commands[commandName] = (await import(join(__dirname, '..', 'commands', commandName))).default
   })
 
-const handleMessage: (message: Message) => Promise<void> = async message => {
-  if (
-    message.author.bot ||
-    cache.banned[message.author.id] ||
-    !message.guild ||
-    cache.banned[message.guild.id] ||
-    message.channel instanceof DMChannel
-  ) {
+const handleMessage = async (message: Message) => {
+  if (message.author.bot || !message.guild || cache.banned[message.author.id] || cache.banned[message.guild.id]) {
     return
   }
 
   const guildId = message.guild.id
   const prefix = cache.settings[guildId]?.prefix || 'c!'
-  const mentionBotPattern = new RegExp(`<@!{0,1}${message.client.user?.id}>`)
-  if (mentionBotPattern.test(message.content)) {
-    message.channel.send(':gear: 指令前綴：`PREFIX`'.replace('PREFIX', Util.escapeMarkdown(prefix)))
-    return
-  }
-  if (!message.content.startsWith(prefix)) {
+  const isMentioned = new RegExp(`^<@!{0,1}${message.client.user?.id}>$`).test(message.content)
+  if (!message.content.startsWith(prefix) && !isMentioned) {
     return
   }
 
-  const args = message.content.replace(/\s+/g, ' ').split(' ')
-  const commandName = args[0].slice(prefix.length)
+  const args = message.content.replace(/[\s\n]+/g, ' ').split(' ')
+  const commandName = isMentioned ? 'help' : args[0].slice(prefix.length)
   if (!commandName || !commands[commandName]) {
     return
   }
@@ -62,21 +52,15 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
     if (!commandResult) {
       return
     }
-    if (!commandResult.content && !commandResult.embed) {
+    if (!commandResult?.content && !commandResult.embed) {
       throw new Error('No result content.')
     }
     await sendResponse(message, commandResult)
-    if (commandResult.isSyntaxError) {
-      delete guildStatus[guildId]
-      return
-    }
   } catch (error) {
     await sendResponse(message, {
-      content: ':fire: 發生未知的錯誤，請加入開發群組回報問題\nhttps://discord.gg/Ctwz4BB',
+      content: ':fire: 好像發生了點問題，請加入開發群組回報狀況\nhttps://discord.gg/Ctwz4BB',
       error,
     })
-    delete guildStatus[guildId]
-    return
   }
 
   guildStatus[guildId] = 'cooling-down'
@@ -86,7 +70,7 @@ const handleMessage: (message: Message) => Promise<void> = async message => {
 }
 
 const sendResponse = async (message: Message, result: CommandResultProps) => {
-  if (message.channel instanceof DMChannel) {
+  if (!message.guild || message.channel instanceof DMChannel) {
     return
   }
 
@@ -120,7 +104,7 @@ const sendResponse = async (message: Message, result: CommandResultProps) => {
               },
               {
                 name: 'Guild',
-                value: `${message.guild?.id}\n${Util.escapeMarkdown(message.guild?.name || '')}`,
+                value: `${message.guild.id}\n${Util.escapeMarkdown(message.guild.name)}`,
                 inline: true,
               },
               {
@@ -134,7 +118,9 @@ const sendResponse = async (message: Message, result: CommandResultProps) => {
                 inline: true,
               },
             ],
-            footer: { text: `${(responseMessage?.createdTimestamp || Date.now()) - message.createdTimestamp} ms` },
+            footer: {
+              text: responseMessage ? `${responseMessage.createdTimestamp - message.createdTimestamp} ms` : undefined,
+            },
           },
         ],
       },

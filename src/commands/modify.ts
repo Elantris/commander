@@ -8,7 +8,7 @@ import searchMembers from '../utils/searchMembers'
 const commandModify: CommandProps = async ({ message, guildId, args }) => {
   if (!isAdmin(message.member)) {
     return {
-      content: ':x: 這個指令限「管理員」使用',
+      content: ':lock: 這個指令限「管理員」使用',
       isSyntaxError: true,
     }
   }
@@ -35,12 +35,7 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  const record: string | undefined = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
-  if (!record) {
-    return {
-      content: `:x: ${date} 這天沒有點名紀錄`,
-    }
-  }
+  const record: string = (await database.ref(`/records/${guildId}/${date}`).once('value')).val() || ''
 
   const recordedMemberIds = record.split(' ')
   const addedMembers = members.filter(member => !record.includes(member.id))
@@ -58,20 +53,22 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
     )
 
   return {
-    content: ':triangular_flag_on_post: 點名紀錄 DATE\n新增成員：ADDED_MEMBERS\n移除成員：REMOVED_MEMBERS'
-      .replace('DATE', date)
-      .replace(
-        'ADDED_MEMBERS',
-        addedMembers
-          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName.slice(0, 16)))
-          .join('、'),
-      )
-      .replace(
-        'REMOVED_MEMBERS',
-        removedMembers
-          .map(member => Util.escapeMarkdown(cache.names[member.id] || member.displayName.slice(0, 16)))
-          .join('、'),
-      ),
+    content:
+      ':triangular_flag_on_post: **GUILD_NAME**\n點名日期：DATE\n新增成員：ADDED_MEMBERS\n移除成員：REMOVED_MEMBERS'
+        .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
+        .replace('DATE', date)
+        .replace(
+          'ADDED_MEMBERS',
+          addedMembers
+            .map(member => Util.escapeMarkdown((cache.names[member.id] || member.displayName).slice(0, 16)))
+            .join('、') || '--',
+        )
+        .replace(
+          'REMOVED_MEMBERS',
+          removedMembers
+            .map(member => Util.escapeMarkdown((cache.names[member.id] || member.displayName).slice(0, 16)))
+            .join('、') || '--',
+        ),
   }
 }
 
