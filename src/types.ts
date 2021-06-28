@@ -9,6 +9,6 @@ export type CommandProps = (options: {
 export type CommandResultProps = {
   content?: string
   embed?: MessageEmbedOptions
-  isSyntaxError?: boolean
+  errorType?: 'syntax' | 'noAdmin' | 'system'
   error?: Error
 }

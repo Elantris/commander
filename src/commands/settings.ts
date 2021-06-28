@@ -66,7 +66,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
   if (!isAdmin(message.member)) {
     return {
       content: ':lock: 變更設定僅限「管理員」使用',
-      isSyntaxError: true,
+      errorType: 'noAdmin',
     }
   }
 
@@ -75,13 +75,15 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
   if (!defaultSettings[settingKey]) {
     return {
-      content: ':x: 設定語法：`c!settings 設定項目 設定值`，可以設定的項目：SETTING_KEYS'.replace(
-        'SETTING_KEYS',
-        Object.keys(defaultSettings)
-          .map(key => `\`${key}\``)
-          .join(' '),
-      ),
-      isSyntaxError: true,
+      content: ':x: 沒有這個設定項目：USER_INPUT\n可以設定的項目：SETTING_KEYS'
+        .replace('USER_INPUT', settingKey)
+        .replace(
+          'SETTING_KEYS',
+          Object.keys(defaultSettings)
+            .map(key => `\`${key}\``)
+            .join(' '),
+        ),
+      errorType: 'syntax',
     }
   }
 
@@ -114,6 +116,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     if (targetChannels.length === 0) {
       return {
         content: ':x: 找不到語音頻道，或許是頻道名稱怪怪的，可以嘗試換成頻道 ID',
+        errorType: 'syntax',
       }
     }
 
@@ -134,7 +137,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     if (targetRoles.length === 0) {
       return {
         content: ':x: 找不到身份組，請輸入正確的身份組名稱（不含空格）',
-        isSyntaxError: true,
+        errorType: 'syntax',
       }
     }
 

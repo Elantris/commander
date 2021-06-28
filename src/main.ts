@@ -10,9 +10,11 @@ client.on('message', handleMessage)
 
 client.on('ready', () => {
   loggerHook.send(
-    '[`TIME`] USER_TAG'.replace('TIME', moment().format('HH:mm:ss')).replace('USER_TAG', client.user?.tag || ''),
+    '`TIME` USER_TAG'
+      .replace('TIME', moment().format('YYYY-MM-DD HH:mm:ss'))
+      .replace('USER_TAG', client.user?.tag || ''),
   )
-  client.user?.setActivity('Version 2021.06.07 | https://discord.gg/Ctwz4BB')
+  client.user?.setActivity('Version 2021.06.28 | https://discord.gg/Ctwz4BB')
 })
 
 client.login(config.DISCORD.TOKEN)

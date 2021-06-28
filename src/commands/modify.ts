@@ -9,14 +9,14 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
   if (!isAdmin(message.member)) {
     return {
       content: ':lock: 這個指令限「管理員」使用',
-      isSyntaxError: true,
+      errorType: 'noAdmin',
     }
   }
 
   if (args.length < 3) {
     return {
       content: ':x: 需要選擇日期、目標成員，`c!modify YYYYMMDD members`',
-      isSyntaxError: true,
+      errorType: 'syntax',
     }
   }
 
@@ -24,7 +24,7 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
   if (!isValidDate(date)) {
     return {
       content: ':x: 第一個參數要指定日期 YYYYMMDD',
-      isSyntaxError: true,
+      errorType: 'syntax',
     }
   }
 
@@ -32,6 +32,7 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
   if (members.length === 0) {
     return {
       content: ':x: 找不到指定的成員',
+      errorType: 'syntax',
     }
   }
 

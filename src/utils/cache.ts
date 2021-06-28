@@ -26,11 +26,19 @@ const cache: {
   hints: {
     [key in string]?: string
   }
+  syntaxErrorsCounts: {
+    [UserID in string]?: number
+  }
+  noAdminErrorsCounts: {
+    [UserID in string]?: number
+  }
 } = {
   banned: {},
   names: {},
   settings: {},
   hints: {},
+  syntaxErrorsCounts: {},
+  noAdminErrorsCounts: {},
 }
 
 const updateCache = (snapshot: admin.database.DataSnapshot) => {

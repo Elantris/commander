@@ -13,9 +13,9 @@ const searchMembers: (message: Message, searches: string[]) => Promise<GuildMemb
         member =>
           search === member.id ||
           search === cache.names[member.id] ||
-          search === member.displayName ||
-          search === member.user.username ||
-          search === member.user.tag ||
+          search === member.displayName.replace(/\s/g, '') ||
+          search === member.user.username.replace(/\s/g, '') ||
+          search === member.user.tag.replace(/\s/g, '') ||
           search.includes(member.id),
       ),
     )

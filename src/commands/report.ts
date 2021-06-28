@@ -9,21 +9,21 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   if (!isAdmin(message.member)) {
     return {
       content: ':lock: 這個指令限「管理員」使用',
-      isSyntaxError: true,
+      errorType: 'noAdmin',
     }
   }
 
   if (args.length < 3) {
     return {
       content: ':question: 請輸入開始日期與結束日期，格式為 `c!report YYYYMMDD YYYYMMDD`（年/月/日）',
-      isSyntaxError: true,
+      errorType: 'syntax',
     }
   }
 
   if (!isValidDate(args[1]) || !isValidDate(args[2])) {
     return {
       content: ':x: 我只認識的日期格式為 `YYYYMMDD` （年/月/日）',
-      isSyntaxError: true,
+      errorType: 'syntax',
     }
   }
   const startDate = args[1] < args[2] ? args[1] : args[2]
@@ -31,7 +31,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   if (moment(endDate).diff(moment(startDate), 'days') > 31) {
     return {
       content: ':x: 查詢區間限一個月內',
-      isSyntaxError: true,
+      errorType: 'syntax',
     }
   }
 
@@ -45,6 +45,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
         .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
         .replace('START_DATE', startDate)
         .replace('END_DATE', endDate),
+      errorType: 'syntax',
     }
   }
 
@@ -113,11 +114,12 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
 
   return {
     content:
-      ':triangular_flag_on_post: **GUILD_NAME**\n出席統計 `START_DATE` ~ `END_DATE`\n點名日期：DATES\n點名對象：ROLES'
+      ':triangular_flag_on_post: **GUILD_NAME**\n出席統計 `START_DATE` ~ `END_DATE`\n點名日期：DATES (共 COUNT 次)\n點名對象：ROLES'
         .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
         .replace('START_DATE', startDate)
         .replace('END_DATE', endDate)
         .replace('DATES', recordDates.map(date => `\`${date}\``).join(' '))
+        .replace('COUNT', `${recordDates.length}`)
         .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
     embed: {
       fields,

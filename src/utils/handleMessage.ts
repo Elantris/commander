@@ -3,7 +3,7 @@ import { readdirSync } from 'fs'
 import moment from 'moment'
 import { join } from 'path'
 import { CommandProps, CommandResultProps } from '../types'
-import cache from './cache'
+import cache, { database } from './cache'
 import getHint from './getHint'
 import { loggerHook } from './hooks'
 
@@ -49,13 +49,35 @@ const handleMessage = async (message: Message) => {
   try {
     guildStatus[guildId] = 'processing'
     const commandResult = await commands[commandName]?.({ message, guildId, args })
-    if (!commandResult) {
-      return
-    }
-    if (!commandResult?.content && !commandResult.embed) {
-      throw new Error('No result content.')
+    if (!commandResult || (!commandResult?.content && !commandResult.embed)) {
+      throw new Error('No result content')
     }
     await sendResponse(message, commandResult)
+
+    if (commandResult.errorType === 'syntax') {
+      cache.syntaxErrorsCounts[message.author.id] = (cache.syntaxErrorsCounts[message.author.id] || 0) + 1
+      if ((cache.syntaxErrorsCounts[message.author.id] || 0) > 16) {
+        database
+          .ref(`/banned/${message.author.id}`)
+          .set(`[${moment(message.createdTimestamp).format('YYYY-MM-DD HH:mm')}] too many syntax errors`)
+        await sendResponse(message, {
+          content: ':lock: 錯誤使用指令太多次，請加入客服群組說明原因以解鎖機器人使用權',
+        })
+      }
+    } else if (commandResult.errorType === 'noAdmin') {
+      cache.noAdminErrorsCounts[message.author.id] = (cache.noAdminErrorsCounts[message.author.id] || 0) + 1
+      if ((cache.noAdminErrorsCounts[message.author.id] || 0) > 4) {
+        database
+          .ref(`/banned/${message.author.id}`)
+          .set(`[${moment(message.createdTimestamp).format('YYYY-MM-DD HH:mm')}] no admin permission`)
+        await sendResponse(message, {
+          content: ':lock: 偵測到無管理員身份試圖竄改點名紀錄，如需解鎖請伺服器管理員到客服群組說明原因',
+        })
+      }
+    } else {
+      cache.syntaxErrorsCounts[message.author.id] = 0
+      cache.noAdminErrorsCounts[message.author.id] = 0
+    }
   } catch (error) {
     await sendResponse(message, {
       content: ':fire: 好像發生了點問題，請加入開發群組回報狀況\nhttps://discord.gg/Ctwz4BB',

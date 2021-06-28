@@ -8,14 +8,14 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   if (!isAdmin(message.member)) {
     return {
       content: ':lock: 這個指令限「管理員」使用',
-      isSyntaxError: true,
+      errorType: 'noAdmin',
     }
   }
 
   if (!message.member?.voice.channel) {
     return {
       content: ':x: 請先接聽語音頻道',
-      isSyntaxError: true,
+      errorType: 'syntax',
     }
   }
 
@@ -30,7 +30,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   if (targetChannels.length === 0) {
     return {
       content: ':question: 找不到有效語音頻道，原本設定的語音頻道好像被刪掉了？',
-      isSyntaxError: true,
+      errorType: 'syntax',
     }
   }
 
@@ -46,6 +46,7 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
       content: `:question: 語音頻道內好像沒有人？點名頻道：${targetChannels
         .map(channel => Util.escapeMarkdown(channel.name))
         .join('、')}`,
+      errorType: 'syntax',
     }
   }
 
@@ -64,11 +65,13 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   )
 
   return {
-    content: ':triangular_flag_on_post: **GUILD_NAME**\n點名日期：`DATE`\n點名頻道：CHANNELS\n點名對象：ROLES'
-      .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
-      .replace('DATE', date)
-      .replace('CHANNELS', targetChannels.map(channel => Util.escapeMarkdown(channel.name)).join('、'))
-      .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
+    content:
+      ':triangular_flag_on_post: **GUILD_NAME**\n點名日期：`DATE`\n點名頻道：CHANNELS\n點名對象：ROLES\n出席人數：COUNT'
+        .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
+        .replace('DATE', date)
+        .replace('CHANNELS', targetChannels.map(channel => Util.escapeMarkdown(channel.name)).join('、'))
+        .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、'))
+        .replace('COUNT', `${targetMembers.length}`),
     embed: {
       fields: targetMembers
         .reduce<string[][]>((accumulator, member, index) => {
