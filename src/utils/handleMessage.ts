@@ -3,12 +3,11 @@ import { readdirSync } from 'fs'
 import moment from 'moment'
 import { join } from 'path'
 import { CommandProps, CommandResultProps } from '../types'
-import cache, { database } from './cache'
-import getHint from './getHint'
-import { loggerHook } from './hooks'
+import cache, { database, getHint, loggerHook } from './cache'
+import notEmpty from './notEmpty'
 
-const guildStatus: { [GuildID in string]?: 'processing' | 'cooling-down' | 'muted' } = {}
 const commands: { [CommandName in string]?: CommandProps } = {}
+const guildStatus: { [GuildID in string]?: 'processing' | 'cooling-down' | 'muted' } = {}
 
 readdirSync(join(__dirname, '..', 'commands'))
   .filter(filename => filename.endsWith('.js') || filename.endsWith('.ts'))
@@ -56,12 +55,12 @@ const handleMessage = async (message: Message) => {
 
     if (commandResult.errorType === 'syntax') {
       cache.syntaxErrorsCounts[message.author.id] = (cache.syntaxErrorsCounts[message.author.id] || 0) + 1
-      if ((cache.syntaxErrorsCounts[message.author.id] || 0) > 16) {
+      if ((cache.syntaxErrorsCounts[message.author.id] || 0) > 8) {
         database
           .ref(`/banned/${message.author.id}`)
-          .set(`[${moment(message.createdTimestamp).format('YYYY-MM-DD HH:mm')}] too many syntax errors`)
+          .set(`[${moment(message.createdTimestamp).format('YYYY-MM-DD HH:mm:ss')}] too many syntax errors`)
         await sendResponse(message, {
-          content: ':lock: 錯誤使用指令太多次，請加入客服群組說明原因以解鎖機器人使用權',
+          content: ':lock: 無法正確使用機器人指令嗎？建議加入客服群組尋求協助！',
         })
       }
     } else if (commandResult.errorType === 'noAdmin') {
@@ -69,9 +68,9 @@ const handleMessage = async (message: Message) => {
       if ((cache.noAdminErrorsCounts[message.author.id] || 0) > 4) {
         database
           .ref(`/banned/${message.author.id}`)
-          .set(`[${moment(message.createdTimestamp).format('YYYY-MM-DD HH:mm')}] no admin permission`)
+          .set(`[${moment(message.createdTimestamp).format('YYYY-MM-DD HH:mm:ss')}] no admin permission`)
         await sendResponse(message, {
-          content: ':lock: 偵測到無管理員身份試圖竄改點名紀錄，如需解鎖請伺服器管理員到客服群組說明原因',
+          content: ':lock: 偵測到無管理權限的使用者試圖竄改紀錄或設定，如需解鎖請到客服群組說明原因。',
         })
       }
     } else {
@@ -80,7 +79,7 @@ const handleMessage = async (message: Message) => {
     }
   } catch (error) {
     await sendResponse(message, {
-      content: ':fire: 好像發生了點問題，請加入開發群組回報狀況\nhttps://discord.gg/Ctwz4BB',
+      content: ':fire: 好像發生了點問題，請加入開發群組回報狀況',
       error,
     })
   }
@@ -120,10 +119,12 @@ const sendResponse = async (message: Message, result: CommandResultProps) => {
           {
             color: result.error ? 0xff6b6b : undefined,
             fields: [
-              {
-                name: 'Status',
-                value: result.error ? '```ERROR```'.replace('ERROR', `${result.error}`) : 'SUCCESS',
-              },
+              result.error
+                ? {
+                    name: 'Command',
+                    value: '```ERROR```'.replace('ERROR', `${result.error.stack}`),
+                  }
+                : undefined,
               {
                 name: 'Guild',
                 value: `${message.guild.id}\n${Util.escapeMarkdown(message.guild.name)}`,
@@ -139,10 +140,10 @@ const sendResponse = async (message: Message, result: CommandResultProps) => {
                 value: `${message.author.id}\n${Util.escapeMarkdown(message.author.tag)}`,
                 inline: true,
               },
-            ],
-            footer: {
-              text: responseMessage ? `${responseMessage.createdTimestamp - message.createdTimestamp} ms` : undefined,
-            },
+            ].filter(notEmpty),
+            footer: responseMessage
+              ? { text: `${responseMessage.createdTimestamp - message.createdTimestamp} ms` }
+              : undefined,
           },
         ],
       },

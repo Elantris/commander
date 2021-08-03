@@ -1,8 +1,10 @@
 import { Util } from 'discord.js'
+import { unionWith } from 'ramda'
 import { CommandProps } from '../types'
 import cache, { database } from '../utils/cache'
 import isAdmin from '../utils/isAdmin'
 import isValidDate from '../utils/isValidDate'
+import notEmpty from '../utils/notEmpty'
 import searchMembers from '../utils/searchMembers'
 
 const commandModify: CommandProps = async ({ message, guildId, args }) => {
@@ -23,24 +25,44 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
   const date = args[1]
   if (!isValidDate(date)) {
     return {
-      content: ':x: 第一個參數要指定日期 YYYYMMDD',
+      content: ':x: 第一個參數要指定日期 YYYYMMDD（西元年月日）',
       errorType: 'syntax',
     }
   }
 
-  const members = await searchMembers(message, args.slice(2))
-  if (members.length === 0) {
+  const targetMembers = unionWith(
+    (a, b) => a.id === b.id,
+    await searchMembers(message, args.slice(2)),
+    message.mentions.members?.array() || [],
+  )
+  if (targetMembers.length === 0) {
     return {
       content: ':x: 找不到指定的成員',
       errorType: 'syntax',
     }
   }
 
-  const record: string = (await database.ref(`/records/${guildId}/${date}`).once('value')).val() || ''
+  const displayNamesUpdates: { [MemberID: string]: string } = {}
 
-  const recordedMemberIds = record.split(' ')
-  const addedMembers = members.filter(member => !record.includes(member.id))
-  const removedMembers = members.filter(member => record.includes(member.id))
+  for (const member of targetMembers) {
+    if (cache.displayNames[guildId]?.[member.id] !== member.displayName) {
+      displayNamesUpdates[member.id] = member.displayName
+    }
+  }
+
+  if (Object.keys(displayNamesUpdates).length) {
+    cache.displayNames[guildId] = {
+      ...(cache.displayNames[guildId] || {}),
+      ...displayNamesUpdates,
+    }
+    await database.ref(`/displayNames/${guildId}`).update(displayNamesUpdates)
+  }
+
+  const record: string | undefined = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
+
+  const recordedMemberIds = record?.split(' ') || []
+  const addedMembers = targetMembers.filter(member => !record?.includes(member.id))
+  const removedMembers = targetMembers.filter(member => record?.includes(member.id))
 
   await database
     .ref(`/records/${guildId}/${date}`)
@@ -54,22 +76,40 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
     )
 
   return {
-    content:
-      ':triangular_flag_on_post: **GUILD_NAME**\n點名日期：DATE\n新增成員：ADDED_MEMBERS\n移除成員：REMOVED_MEMBERS'
-        .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
-        .replace('DATE', date)
-        .replace(
-          'ADDED_MEMBERS',
-          addedMembers
-            .map(member => Util.escapeMarkdown((cache.names[member.id] || member.displayName).slice(0, 16)))
-            .join('、') || '--',
-        )
-        .replace(
-          'REMOVED_MEMBERS',
-          removedMembers
-            .map(member => Util.escapeMarkdown((cache.names[member.id] || member.displayName).slice(0, 16)))
-            .join('、') || '--',
-        ),
+    content: ':triangular_flag_on_post: **GUILD_NAME** 修改記錄 `DATE`'
+      .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
+      .replace('DATE', date),
+    embed: {
+      description: '點名日期：`DATE`'.replace('DATE', date),
+      fields: [
+        addedMembers.length
+          ? {
+              name: `新增成員 ${addedMembers.length} 人`,
+              value: addedMembers
+                .map(member =>
+                  Util.escapeMarkdown(
+                    (cache.names[member.id] || cache.displayNames[guildId]?.[member.id] || '').slice(0, 16),
+                  ),
+                )
+                .sort()
+                .join('、'),
+            }
+          : undefined,
+        removedMembers.length
+          ? {
+              name: `移除成員 ${removedMembers.length} 人`,
+              value: removedMembers
+                .map(member =>
+                  Util.escapeMarkdown(
+                    (cache.names[member.id] || cache.displayNames[guildId]?.[member.id] || '').slice(0, 16),
+                  ),
+                )
+                .sort()
+                .join('、'),
+            }
+          : undefined,
+      ].filter(notEmpty),
+    },
   }
 }
 

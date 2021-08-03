@@ -2,6 +2,7 @@ import { Role, Util, VoiceChannel } from 'discord.js'
 import { CommandProps } from '../types'
 import cache, { database } from '../utils/cache'
 import isAdmin from '../utils/isAdmin'
+import notEmpty from '../utils/notEmpty'
 
 const defaultSettings: {
   [key: string]: string
@@ -103,49 +104,125 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
   }
 
   if (settingKey === 'channels') {
-    const targetChannels = settingValues
-      .map(search =>
-        message.guild?.channels.cache
-          .filter(channel => channel instanceof VoiceChannel)
-          .find(channel => channel.id === search || channel.name === search),
-      )
-      .reduce<VoiceChannel[]>(
-        (accumulator, channel) => (channel instanceof VoiceChannel ? [...accumulator, channel] : accumulator),
-        [],
-      )
+    const targetChannels: VoiceChannel[] = []
+    const notFoundSearches: string[] = []
+
+    settingValues.forEach(search => {
+      const targetChannel = message.guild?.channels.cache
+        .filter(channel => channel.type === 'voice')
+        .find(channel => channel.name === search || search.includes(channel.id))
+      if (targetChannel instanceof VoiceChannel) {
+        if (targetChannels.some(channel => channel.id === targetChannel.id)) {
+          return
+        }
+        targetChannels.push(targetChannel)
+      } else {
+        notFoundSearches.push(search)
+      }
+    })
+
     if (targetChannels.length === 0) {
       return {
-        content: ':x: 找不到語音頻道，或許是頻道名稱怪怪的，可以嘗試換成頻道 ID',
+        content: ':x: 找不到任何語音頻道，或許是頻道名稱怪怪的，可以嘗試換成頻道 ID',
+        embed: {
+          fields: [
+            {
+              name: '無效搜尋',
+              value: notFoundSearches
+                .map((search, index) => `\`${index + 1}.\` ${Util.escapeMarkdown(search)}`)
+                .join('\n'),
+              inline: true,
+            },
+          ],
+        },
         errorType: 'syntax',
       }
     }
 
     await database.ref(`/settings/${guildId}/channels`).set(targetChannels.map(channel => channel.id).join(' '))
+
     return {
-      content: `:gear: 點名頻道已設定為：${targetChannels
-        .map(channel => Util.escapeMarkdown(channel.name))
-        .join('、')}`,
+      content: `:gear: 已成功設定 ${targetChannels.length} 個點名頻道`,
+      embed: {
+        fields: [
+          {
+            name: '點名頻道',
+            value: targetChannels
+              .map((channel, index) => `\`${index + 1}.\` ${Util.escapeMarkdown(channel.name)}`)
+              .join('\n'),
+            inline: true,
+          },
+          notFoundSearches.length
+            ? {
+                name: '無效搜尋',
+                value: notFoundSearches
+                  .map((search, index) => `\`${index + 1}.\` ${Util.escapeMarkdown(search)}`)
+                  .join('\n'),
+                inline: true,
+              }
+            : undefined,
+        ].filter(notEmpty),
+      },
     }
   }
 
   if (settingKey === 'roles' || settingKey === 'admins') {
-    const roles = await message.guild?.roles.fetch()
-    const targetRoles = settingValues
-      .map(search => roles?.cache.find(role => role.id === search || role.name === search || search.includes(role.id)))
-      .reduce<Role[]>((accumulator, role) => (role ? [...accumulator, role] : accumulator), [])
+    const guildRoles = await message.guild?.roles.fetch()
+    const targetRoles: Role[] = []
+    const notFoundSearches: string[] = []
+
+    settingValues.forEach(search => {
+      const targetRole = guildRoles?.cache.find(role => role.name === search || search.includes(role.id))
+      if (targetRole) {
+        if (targetRoles.some(role => role.id === targetRole.id)) {
+          return
+        }
+        targetRoles.push(targetRole)
+      } else {
+        notFoundSearches.push(search)
+      }
+    })
 
     if (targetRoles.length === 0) {
       return {
-        content: ':x: 找不到身份組，請輸入正確的身份組名稱（不含空格）',
+        content: ':x: 找不到身份組，請輸入正確的身份組名稱（不含空格）或輸入身份組 ID',
+        embed: {
+          fields: [
+            {
+              name: '無效搜尋',
+              value: notFoundSearches
+                .map((search, index) => `\`${index + 1}.\` ${Util.escapeMarkdown(search)}`)
+                .join('\n'),
+              inline: true,
+            },
+          ],
+        },
         errorType: 'syntax',
       }
     }
 
     await database.ref(`/settings/${guildId}/${settingKey}`).set(targetRoles.map(role => role.id).join(' '))
+
     return {
-      content: `:gear: SETTING_KEY 已設定為：ROLES`
-        .replace('SETTING_KEY', settingKey === 'roles' ? '點名對象' : settingKey === 'admins' ? '點名隊長' : settingKey)
-        .replace('ROLES', targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
+      content: `:gear: 已成功設定 ${targetRoles.length} 個身份組`,
+      embed: {
+        fields: [
+          {
+            name: settingKey === 'roles' ? '點名對象' : settingKey === 'admins' ? '點名隊長' : settingKey,
+            value: targetRoles.map((role, index) => `\`${index + 1}.\` ${Util.escapeMarkdown(role.name)}`).join('\n'),
+            inline: true,
+          },
+          notFoundSearches.length
+            ? {
+                name: '無效搜尋',
+                value: notFoundSearches
+                  .map((search, index) => `\`${index + 1}.\` ${Util.escapeMarkdown(search)}`)
+                  .join('\n'),
+                inline: true,
+              }
+            : undefined,
+        ].filter(notEmpty),
+      },
     }
   }
 

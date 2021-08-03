@@ -1,14 +1,25 @@
-import { Util } from 'discord.js'
+import { Guild, Util } from 'discord.js'
+import { appCheck } from 'firebase-admin'
 import { CommandProps } from '../types'
 import cache, { database } from '../utils/cache'
 
-const commandName: CommandProps = async ({ message, args }) => {
+const commandName: CommandProps = async ({ message, guildId, args }) => {
+  if (cache.displayNames[guildId]?.[message.author.id] !== message.member?.displayName) {
+    cache.displayNames[guildId] = {
+      ...(cache.displayNames[guildId] || {}),
+      [message.author.id]: message.member?.displayName,
+    }
+    await database.ref(`/displayNames/${guildId}/${message.author.id}`).set(message.member?.displayName)
+  }
+
   if (args.length === 1) {
     if (cache.names[message.author.id]) {
       await database.ref(`/names/${message.author.id}`).remove()
     }
     return {
-      content: ':triangular_flag_on_post: 已重設 USER_TAG 的顯示名稱'.replace('USER_TAG', message.author.tag),
+      content: ':triangular_flag_on_post: 已重設 USER_TAG 的顯示名稱為 MEMBER_NAME'
+        .replace('USER_TAG', message.author.tag)
+        .replace('MEMBER_NAME', message.member?.displayName || ''),
     }
   }
 

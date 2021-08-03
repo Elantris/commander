@@ -1,3 +1,4 @@
+import { WebhookClient } from 'discord.js'
 import admin, { ServiceAccount } from 'firebase-admin'
 import config from '../config'
 
@@ -23,6 +24,11 @@ const cache: {
       admins?: string
     }
   }
+  displayNames: {
+    [GuildID in string]?: {
+      [MemberID in string]?: string
+    }
+  }
   hints: {
     [key in string]?: string
   }
@@ -34,9 +40,11 @@ const cache: {
   }
 } = {
   banned: {},
+  displayNames: {},
+  hints: {},
   names: {},
   settings: {},
-  hints: {},
+
   syntaxErrorsCounts: {},
   noAdminErrorsCounts: {},
 }
@@ -57,14 +65,35 @@ const removeCache = (snapshot: admin.database.DataSnapshot) => {
 database.ref('/banned').on('child_added', updateCache)
 database.ref('/banned').on('child_changed', updateCache)
 database.ref('/banned').on('child_removed', removeCache)
+database.ref('/hints').on('child_added', updateCache)
+database.ref('/hints').on('child_changed', updateCache)
+database.ref('/hints').on('child_removed', removeCache)
 database.ref('/names').on('child_added', updateCache)
 database.ref('/names').on('child_changed', updateCache)
 database.ref('/names').on('child_removed', removeCache)
 database.ref('/settings').on('child_added', updateCache)
 database.ref('/settings').on('child_changed', updateCache)
 database.ref('/settings').on('child_removed', removeCache)
-database.ref('/hints').on('child_added', updateCache)
-database.ref('/hints').on('child_changed', updateCache)
-database.ref('/hints').on('child_removed', removeCache)
+
+database
+  .ref('/displayNames')
+  .once('value')
+  .then(snapshot => {
+    cache.displayNames = snapshot.val() || {}
+  })
+
+export const loggerHook = new WebhookClient(...config.DISCORD.LOGGER_HOOK)
+
+export const getHint: (key?: string) => string = key => {
+  if (key && cache.hints[key]) {
+    return cache.hints[key] || ''
+  }
+
+  const allHints = Object.values(cache.hints)
+  const pick = Math.floor(Math.random() * allHints.length)
+  const hint = allHints[pick] || ''
+
+  return hint
+}
 
 export default cache

@@ -1,7 +1,7 @@
 import { GuildMember } from 'discord.js'
 import cache from './cache'
 
-const isAdmin = (member: GuildMember | null | undefined) => {
+const isAdmin: (member: GuildMember | null | undefined) => boolean = member => {
   if (!member) {
     return false
   }
