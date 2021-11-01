@@ -1,5 +1,4 @@
-import { Guild, Util } from 'discord.js'
-import { appCheck } from 'firebase-admin'
+import { Util } from 'discord.js'
 import { CommandProps } from '../types'
 import cache, { database } from '../utils/cache'
 

@@ -1,4 +1,4 @@
-import { EmbedFieldData, Role, Util } from 'discord.js'
+import { EmbedFieldData, GuildMemberManager, Role, Util } from 'discord.js'
 import moment from 'moment'
 import { CommandProps } from '../types'
 import cache, { database } from '../utils/cache'
@@ -65,7 +65,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   const targetRoles: Role[] = []
   const missingRoleIds: string[] = []
   cache.settings[guildId]?.roles?.split(' ').forEach(roleId => {
-    const targetRole = guildRoles?.cache.get(roleId)
+    const targetRole = guildRoles?.get(roleId)
     if (targetRole) {
       targetRoles.push(targetRole)
     } else {
@@ -81,7 +81,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
           attendedMembers[memberId].count += 1
         } else {
           attendedMembers[memberId] = {
-            name: cache.names[memberId] || cache.displayNames[guildId]?.[memberId] || '',
+            name: cache.names[memberId] || cache.displayNames[guildId]?.[memberId] || memberId,
             count: 1,
           }
         }
@@ -110,21 +110,21 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
 
   const recordDates = Object.keys(rawData)
   const fields: EmbedFieldData[] = []
-  new Array(recordDates.length).fill(0).forEach((_, i) => {
-    const filteredMemberIds = Object.keys(attendedMembers)
-      .filter(memberId => memberId && attendedMembers[memberId].count === recordDates.length - i)
-      .sort((a, b) => attendedMembers[a].name.localeCompare(attendedMembers[b].name) || a.localeCompare(b))
-    const memberCount = filteredMemberIds.length
-    while (filteredMemberIds.length) {
-      fields.push({
-        name: filteredMemberIds.length === memberCount ? `出席 ${recordDates.length - i} 次：${memberCount} 人` : '.',
-        value: filteredMemberIds
-          .splice(0, 50)
-          .map(memberId => Util.escapeMarkdown(attendedMembers[memberId].name.slice(0, 16)) || `<@${memberId}>`)
-          .join('、'),
-      })
+  for (let i = recordDates.length; i > 0; i--) {
+    const targetMembers = Object.values(attendedMembers)
+      .filter(member => member.count === i)
+      .map(member => Util.escapeMarkdown(member.name.slice(0, 16)))
+      .sort()
+    if (targetMembers.length === 0) {
+      continue
     }
-  })
+    Util.splitMessage(targetMembers.join('\n'), { maxLength: 1024 }).forEach((content, index) => {
+      fields.push({
+        name: index === 0 ? `出席 ${i} 次：${targetMembers.length} 人` : '.',
+        value: content.replace(/\n/g, '、'),
+      })
+    })
+  }
 
   return {
     content: ':triangular_flag_on_post: **GUILD_NAME** 出席統計 `START_DATE` ~ `END_DATE`'
@@ -135,7 +135,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
       description: '點名日期：DATES（共 COUNT 次）\n點名對象：ROLES'
         .replace('DATES', recordDates.map(date => `\`${date}\``).join(' '))
         .replace('COUNT', `${recordDates.length}`)
-        .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、')),
+        .replace('ROLES', isEveryone ? '@everyone' : targetRoles.map(role => `<@&${role.id}>`).join(' ')),
       fields,
     },
   }

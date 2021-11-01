@@ -1,4 +1,4 @@
-import { GuildMember, Role, Util, VoiceChannel } from 'discord.js'
+import { EmbedFieldData, Role, Util, VoiceChannel } from 'discord.js'
 import moment from 'moment'
 import { CommandProps } from '../types'
 import cache, { database } from '../utils/cache'
@@ -12,13 +12,14 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
     }
   }
 
-  if (!message.member?.voice.channel) {
+  if (!message.member?.voice.channel || message.member.voice.channel.type !== 'GUILD_VOICE') {
     return {
       content: ':x: 請先接聽語音頻道',
       errorType: 'syntax',
     }
   }
 
+  // channels
   const targetChannels: VoiceChannel[] = [message.member.voice.channel]
   const missingChannelIds: string[] = []
   cache.settings[guildId]?.channels?.split(' ').forEach(channelId => {
@@ -33,20 +34,38 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
     }
   })
 
-  if (targetChannels.length === 0) {
-    return {
-      content: ':question: 找不到任何有效語音頻道，原本設定的語音頻道好像都被刪掉了？',
-      errorType: 'syntax',
+  // roles
+  const guildRoles = await message.guild?.roles.fetch()
+  const targetRoles: Role[] = []
+  const missingRoleIds: string[] = []
+  cache.settings[guildId]?.roles?.split(' ').forEach(roleId => {
+    if (targetRoles.some(targetRole => targetRole.id === roleId)) {
+      return
     }
-  }
+    const targetRole = guildRoles?.get(roleId)
+    if (targetRole) {
+      targetRoles.push(targetRole)
+    } else {
+      missingRoleIds.push(roleId)
+    }
+  })
+  const isEveryone = targetRoles.length === 0
 
-  const attendedMembers: GuildMember[] = []
+  // members
+  const attendedMembers: {
+    id: string
+    name: string
+    roleId?: string
+  }[] = []
   const displayNamesUpdates: { [MemberID: string]: string } = {}
-
   targetChannels.forEach(channel => {
     channel.members.forEach(member => {
       if (!member.user.bot) {
-        attendedMembers.push(member)
+        attendedMembers.push({
+          id: member.id,
+          name: Util.escapeMarkdown(cache.names[member.id] || member.displayName).slice(0, 16),
+          roleId: isEveryone ? undefined : targetRoles.find(role => member.roles.cache.has(role.id))?.id,
+        })
       }
       if (cache.displayNames[guildId]?.[member.id] !== member.displayName) {
         displayNamesUpdates[member.id] = member.displayName
@@ -69,25 +88,6 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
     await database.ref(`/displayNames/${guildId}`).update(displayNamesUpdates)
   }
 
-  const guildRoles = await message.guild?.roles.fetch()
-  const targetRoles: Role[] = []
-  const missingRoleIds: string[] = []
-  cache.settings[guildId]?.roles?.split(' ').forEach(roleId => {
-    if (targetRoles.some(targetRole => targetRole.id === roleId)) {
-      return
-    }
-    const targetRole = guildRoles?.cache.get(roleId)
-    if (targetRole) {
-      targetRoles.push(targetRole)
-    } else {
-      missingRoleIds.push(roleId)
-    }
-  })
-  const isEveryone = targetRoles.length === 0
-  const targetMembers = attendedMembers
-    .filter(member => isEveryone || targetRoles.some(role => member.roles.cache.get(role.id)))
-    .sort((a, b) => a.displayName.localeCompare(b.displayName))
-
   const warnings: string[] = []
   if (missingChannelIds.length) {
     warnings.push(`:warning: 有 ${missingChannelIds.length} 個設定的語音頻道已被移除`)
@@ -95,37 +95,52 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   if (missingRoleIds.length) {
     warnings.push(`:warning: 有 ${missingRoleIds.length} 個設定的點名對象身份組已被移除`)
   }
-  if (attendedMembers.length - targetMembers.length) {
-    warnings.push(`:warning: 有 ${attendedMembers.length - targetMembers.length} 位成員不在點名對象內`)
+
+  const fields: EmbedFieldData[] = []
+  if (isEveryone) {
+    Util.splitMessage(
+      attendedMembers
+        .map(member => member.name)
+        .sort()
+        .join('\n'),
+      { maxLength: 1024 },
+    ).forEach((content, index) => {
+      fields.push({
+        name: index === 0 ? `所有人：${attendedMembers.length} 人` : '.',
+        value: content.replace(/\n/g, '、'),
+      })
+    })
+  } else {
+    targetRoles.forEach(role => {
+      const targetMembers = attendedMembers
+        .filter(member => member.roleId === role.id)
+        .map(member => member.name)
+        .sort()
+      if (targetMembers.length === 0) {
+        return
+      }
+      Util.splitMessage(targetMembers.join('\n'), { maxLength: 1024 }).forEach((content, index) => {
+        fields.push({
+          name: index === 0 ? `${Util.escapeMarkdown(role.name)}：${targetMembers.length} 人` : '.',
+          value: content.replace(/\n/g, '、'),
+        })
+      })
+    })
   }
 
   return {
     content: ':triangular_flag_on_post: **GUILD_NAME** `DATE` 出席 COUNT 人'
       .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
       .replace('DATE', date)
-      .replace('COUNT', `${targetMembers.length}`),
+      .replace('COUNT', `${attendedMembers.filter(member => isEveryone || !!member.roleId).length}`),
     embed: {
       description: '點名日期：`DATE`\n點名頻道：CHANNELS\n點名對象：ROLES\n\nWARNINGS'
         .replace('DATE', date)
         .replace('CHANNELS', targetChannels.map(channel => Util.escapeMarkdown(channel.name)).join('、'))
-        .replace('ROLES', isEveryone ? '所有人' : targetRoles.map(role => Util.escapeMarkdown(role.name)).join('、'))
+        .replace('ROLES', isEveryone ? '@everyone' : targetRoles.map(role => `<@&${role.id}>`).join(' '))
         .replace('WARNINGS', warnings.join('\n'))
         .trim(),
-      fields: targetMembers
-        .reduce<string[][]>((accumulator, member, index) => {
-          const page = Math.floor(index / 50)
-          if (index % 50 === 0) {
-            accumulator[page] = []
-          }
-          accumulator[page].push(
-            cache.names[member.id] || cache.displayNames[guildId]?.[member.id] || member.displayName,
-          )
-          return accumulator
-        }, [])
-        .map((names, index) => ({
-          name: index === 0 ? `出席成員 ${targetMembers.length} 人` : '.',
-          value: names.map(name => Util.escapeMarkdown(name.slice(0, 16))).join('、'),
-        })),
+      fields,
     },
   }
 }

@@ -1,9 +1,24 @@
 // ! cSpell: disable
 
-const config = {
+const config: {
+  DISCORD: {
+    TOKEN: string
+    LOGGER_HOOK: {
+      id: string
+      token: string
+    }
+  }
+  FIREBASE: {
+    databaseURL: string
+    serviceAccount: any
+  }
+} = {
   DISCORD: {
     TOKEN: '',
-    LOGGER_HOOK: ['', ''],
+    LOGGER_HOOK: {
+      id: '',
+      token: '',
+    },
   },
   FIREBASE: {
     databaseURL: 'https://<PROJECT-ID>.firebaseio.com',

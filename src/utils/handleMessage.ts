@@ -1,4 +1,4 @@
-import { DMChannel, Message, Util } from 'discord.js'
+import { Message, Util } from 'discord.js'
 import { readdirSync } from 'fs'
 import moment from 'moment'
 import { join } from 'path'
@@ -17,7 +17,13 @@ readdirSync(join(__dirname, '..', 'commands'))
   })
 
 const handleMessage = async (message: Message) => {
-  if (message.author.bot || !message.guild || cache.banned[message.author.id] || cache.banned[message.guild.id]) {
+  if (
+    message.author.bot ||
+    !message.guild ||
+    message.channel.type !== 'GUILD_TEXT' ||
+    cache.banned[message.author.id] ||
+    cache.banned[message.guild.id]
+  ) {
     return
   }
 
@@ -77,7 +83,7 @@ const handleMessage = async (message: Message) => {
       cache.syntaxErrorsCounts[message.author.id] = 0
       cache.noAdminErrorsCounts[message.author.id] = 0
     }
-  } catch (error) {
+  } catch (error: any) {
     await sendResponse(message, {
       content: ':fire: 好像發生了點問題，請加入開發群組回報狀況',
       error,
@@ -87,67 +93,68 @@ const handleMessage = async (message: Message) => {
   guildStatus[guildId] = 'cooling-down'
   setTimeout(() => {
     delete guildStatus[guildId]
-  }, 3000)
+  }, 5000)
 }
 
 const sendResponse = async (message: Message, result: CommandResultProps) => {
-  if (!message.guild || message.channel instanceof DMChannel) {
+  if (!message.guild || message.channel.type !== 'GUILD_TEXT') {
     return
   }
 
   const responseMessage = await message.channel
-    .send(result.content, {
-      embed: {
-        color: 0xcc5de8,
-        title: '加入 eeBots Support（公告、更新）',
-        url: 'https://discord.gg/Ctwz4BB',
-        footer: { text: `💡 ${getHint()}` },
-        ...result.embed,
-      },
+    .send({
+      content: result.content,
+      embeds: [
+        {
+          color: 0xcc5de8,
+          title: '加入 eeBots Support（公告、更新）',
+          url: 'https://discord.gg/Ctwz4BB',
+          footer: { text: `💡 ${getHint()}` },
+          ...result.embed,
+        },
+      ],
     })
     .catch(() => null)
 
   loggerHook
-    .send(
-      '[`TIME`] MESSAGE_CONTENT\nRESPONSE_CONTENT'
+    .send({
+      content: '[`TIME`] MESSAGE_CONTENT\nRESPONSE_CONTENT'
         .replace('TIME', moment(message.createdTimestamp).format('HH:mm:ss'))
         .replace('MESSAGE_CONTENT', message.content)
         .replace('RESPONSE_CONTENT', responseMessage?.content || ''),
-      {
-        embeds: [
-          ...(responseMessage?.embeds || []),
-          {
-            color: result.error ? 0xff6b6b : undefined,
-            fields: [
-              result.error
-                ? {
-                    name: 'Command',
-                    value: '```ERROR```'.replace('ERROR', `${result.error.stack}`),
-                  }
-                : undefined,
-              {
-                name: 'Guild',
-                value: `${message.guild.id}\n${Util.escapeMarkdown(message.guild.name)}`,
-                inline: true,
-              },
-              {
-                name: 'Channel',
-                value: `${message.channel.id}\n${Util.escapeMarkdown(message.channel.name)}`,
-                inline: true,
-              },
-              {
-                name: 'User',
-                value: `${message.author.id}\n${Util.escapeMarkdown(message.author.tag)}`,
-                inline: true,
-              },
-            ].filter(notEmpty),
-            footer: responseMessage
-              ? { text: `${responseMessage.createdTimestamp - message.createdTimestamp} ms` }
+      embeds: [
+        ...(responseMessage?.embeds || []),
+        {
+          color: result.error ? 0xff6b6b : undefined,
+          fields: [
+            result.error
+              ? {
+                  name: 'Command',
+                  value: '```ERROR```'.replace('ERROR', `${result.error.stack}`),
+                }
               : undefined,
-          },
-        ],
-      },
-    )
+            {
+              name: 'Guild',
+              value: `${message.guild.id}\n${Util.escapeMarkdown(message.guild.name)}`,
+              inline: true,
+            },
+            {
+              name: 'Channel',
+              value: `${message.channel.id}\n${Util.escapeMarkdown(message.channel.name)}`,
+              inline: true,
+            },
+            {
+              name: 'User',
+              value: `${message.author.id}\n${Util.escapeMarkdown(message.author.tag)}`,
+              inline: true,
+            },
+          ].filter(notEmpty),
+          footer: responseMessage
+            ? { text: `${responseMessage.createdTimestamp - message.createdTimestamp} ms` }
+            : undefined,
+        },
+      ],
+    })
     .catch(() => {})
 }
 

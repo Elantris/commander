@@ -30,11 +30,9 @@ const commandModify: CommandProps = async ({ message, guildId, args }) => {
     }
   }
 
-  const targetMembers = unionWith(
-    (a, b) => a.id === b.id,
-    await searchMembers(message, args.slice(2)),
-    message.mentions.members?.array() || [],
-  )
+  const targetMembers = unionWith((a, b) => a.id === b.id, await searchMembers(message, args.slice(2)), [
+    ...(message.mentions.members?.values() || []),
+  ])
   if (targetMembers.length === 0) {
     return {
       content: ':x: 找不到指定的成員',

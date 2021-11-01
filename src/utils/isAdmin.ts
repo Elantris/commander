@@ -6,7 +6,7 @@ const isAdmin: (member: GuildMember | null | undefined) => boolean = member => {
     return false
   }
 
-  if (member.hasPermission('ADMINISTRATOR')) {
+  if (member.permissions.has('ADMINISTRATOR')) {
     return true
   }
 

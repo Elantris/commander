@@ -28,11 +28,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
             value:
               cache.settings[guildId]?.channels
                 ?.split(' ')
-                .map(channelId => message.guild?.channels.cache.get(channelId)?.name)
-                .reduce<string[]>(
-                  (accumulator, value) => (value ? [...accumulator, Util.escapeMarkdown(value)] : accumulator),
-                  [],
-                )
+                .map(channelId => message.guild?.channels.cache.get(channelId)?.name || `\`channelId\` (已移除)`)
                 .join('\n') || defaultSettings.channels,
           },
           {
@@ -40,11 +36,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
             value:
               cache.settings[guildId]?.roles
                 ?.split(' ')
-                .map(roleId => message.guild?.roles.cache.get(roleId)?.name)
-                .reduce<string[]>(
-                  (accumulator, value) => (value ? [...accumulator, Util.escapeMarkdown(value)] : accumulator),
-                  [],
-                )
+                .map(roleId => `<@&${roleId}>`)
                 .join('\n') || defaultSettings.roles,
           },
           {
@@ -52,11 +44,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
             value:
               cache.settings[guildId]?.admins
                 ?.split(' ')
-                .map(roleId => message.guild?.roles.cache.get(roleId)?.name)
-                .reduce<string[]>(
-                  (accumulator, value) => (value ? [...accumulator, Util.escapeMarkdown(value)] : accumulator),
-                  [],
-                )
+                .map(roleId => `<@&${roleId}>`)
                 .join('\n') || defaultSettings.admins,
           },
         ],
@@ -76,14 +64,12 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
   if (!defaultSettings[settingKey]) {
     return {
-      content: ':x: 沒有這個設定項目：USER_INPUT\n可以設定的項目：SETTING_KEYS'
-        .replace('USER_INPUT', settingKey)
-        .replace(
-          'SETTING_KEYS',
-          Object.keys(defaultSettings)
-            .map(key => `\`${key}\``)
-            .join(' '),
-        ),
+      content: ':x: 沒有這個設定項目：`USER_INPUT`'.replace('USER_INPUT', settingKey),
+      embed: {
+        description: `可以設定的項目：\n${Object.keys(defaultSettings)
+          .map(key => `\`c!settings ${key}\``)
+          .join('\n')}`,
+      },
       errorType: 'syntax',
     }
   }
@@ -109,7 +95,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
     settingValues.forEach(search => {
       const targetChannel = message.guild?.channels.cache
-        .filter(channel => channel.type === 'voice')
+        .filter(channel => channel.type === 'GUILD_VOICE')
         .find(channel => channel.name === search || search.includes(channel.id))
       if (targetChannel instanceof VoiceChannel) {
         if (targetChannels.some(channel => channel.id === targetChannel.id)) {
@@ -123,7 +109,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
 
     if (targetChannels.length === 0) {
       return {
-        content: ':x: 找不到任何語音頻道，或許是頻道名稱怪怪的，可以嘗試換成頻道 ID',
+        content: ':x: 找不到任何語音頻道，請輸入完整頻道名稱或使用頻道 ID',
         embed: {
           fields: [
             {
@@ -172,7 +158,7 @@ const commandSettings: CommandProps = async ({ message, guildId, args }) => {
     const notFoundSearches: string[] = []
 
     settingValues.forEach(search => {
-      const targetRole = guildRoles?.cache.find(role => role.name === search || search.includes(role.id))
+      const targetRole = guildRoles?.find(role => role.name === search || search.includes(role.id))
       if (targetRole) {
         if (targetRoles.some(role => role.id === targetRole.id)) {
           return

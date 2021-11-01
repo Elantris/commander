@@ -82,7 +82,7 @@ database
     cache.displayNames = snapshot.val() || {}
   })
 
-export const loggerHook = new WebhookClient(...config.DISCORD.LOGGER_HOOK)
+export const loggerHook = new WebhookClient(config.DISCORD.LOGGER_HOOK)
 
 export const getHint: (key?: string) => string = key => {
   if (key && cache.hints[key]) {
