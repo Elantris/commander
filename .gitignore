@@ -103,5 +103,5 @@ dist
 # TernJS port file
 .tern-port
 
-config.ts
 build
+appConfig.ts

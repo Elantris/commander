@@ -1,18 +1,19 @@
-import { GuildMember } from 'discord.js'
+import { Guild } from 'discord.js'
 import cache from './cache'
 
-const isAdmin: (member: GuildMember | null | undefined) => boolean = member => {
+const isAdmin: (guild: Guild, memberId: string) => boolean = (guild, memberId) => {
+  const member = guild.members.cache.get(memberId)
   if (!member) {
     return false
   }
 
-  if (member.permissions.has('ADMINISTRATOR')) {
+  if (member.permissions.has('Administrator')) {
     return true
   }
 
-  const adminRoles = cache.settings[member.guild.id]?.admins
-  if (adminRoles) {
-    return member.roles.cache.some(role => adminRoles.includes(role.id))
+  const adminRoleId = cache.settings[member.guild.id]?.admin
+  if (adminRoleId && member.roles.cache.get(adminRoleId)) {
+    return true
   }
 
   return false

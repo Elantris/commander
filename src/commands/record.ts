@@ -1,127 +1,170 @@
-import { EmbedFieldData, Role, Util, VoiceChannel } from 'discord.js'
-import moment from 'moment'
-import { CommandProps } from '../types'
-import cache, { database } from '../utils/cache'
+import { APIEmbedField, escapeMarkdown, SlashCommandBuilder } from 'discord.js'
+import cache, { CommandProps, database } from '../utils/cache'
 import isAdmin from '../utils/isAdmin'
+import splitMessage from '../utils/splitMessage'
+import timeFormatter from '../utils/timeFormatter'
+import translate from '../utils/translate'
 
-const commandRecord: CommandProps = async ({ message, guildId }) => {
-  if (!isAdmin(message.member)) {
+const build = new SlashCommandBuilder()
+  .setName('record')
+  .setDescription('紀錄當前接聽語音頻道的成員')
+  .setDescriptionLocalizations({
+    'en-US': 'Record all members in voice channels.',
+  })
+  .toJSON()
+
+const exec: CommandProps['exec'] = async interaction => {
+  const guildId = interaction.guildId
+  const guild = interaction.guild
+
+  if (!guildId || !guild) {
+    return
+  }
+
+  if (!isAdmin(guild, interaction.user.id)) {
     return {
-      content: ':lock: 這個指令限「管理員」使用',
-      errorType: 'noAdmin',
+      content: translate('system.error.adminOnly', { guildId }),
     }
   }
 
-  if (!message.member?.voice.channel || message.member.voice.channel.type !== 'GUILD_VOICE') {
+  // members
+  const voiceChannels: {
+    id: string
+    name: string
+    members: {
+      id: string
+      name: string
+      roleIds: string[]
+    }[]
+  }[] = []
+  let memberCurrentChannelId = ''
+
+  guild.channels.cache.forEach(channel => {
+    if (!channel.isVoiceBased() || channel.members.size === 0) {
+      return
+    }
+    voiceChannels.push({
+      id: channel.id,
+      name: channel.name,
+      members: channel.members.map(member => {
+        if (member.id === interaction.user.id) {
+          memberCurrentChannelId = channel.id
+        }
+        return {
+          id: member.id,
+          name: member.displayName,
+          roleIds: member.roles.cache.map(role => role.id),
+        }
+      }),
+    })
+  })
+
+  if (!memberCurrentChannelId) {
     return {
-      content: ':x: 請先接聽語音頻道',
-      errorType: 'syntax',
+      content: translate('record.error.notInVoiceChannel', { guildId }),
     }
   }
 
   // channels
-  const targetChannels: VoiceChannel[] = [message.member.voice.channel]
+  const targetChannelIds: string[] = [memberCurrentChannelId]
   const missingChannelIds: string[] = []
+
   cache.settings[guildId]?.channels?.split(' ').forEach(channelId => {
-    if (targetChannels.some(targetChannel => targetChannel.id === channelId)) {
+    if (!channelId || targetChannelIds.includes(channelId)) {
       return
     }
-    const targetChannel = message.guild?.channels.cache.get(channelId)
-    if (targetChannel instanceof VoiceChannel) {
-      targetChannels.push(targetChannel)
+    if (guild.channels.cache.get(channelId)?.isVoiceBased()) {
+      targetChannelIds.push(channelId)
     } else {
       missingChannelIds.push(channelId)
     }
   })
 
   // roles
-  const guildRoles = await message.guild?.roles.fetch()
-  const targetRoles: Role[] = []
+  const targetRoleIds: string[] = []
   const missingRoleIds: string[] = []
+
   cache.settings[guildId]?.roles?.split(' ').forEach(roleId => {
-    if (targetRoles.some(targetRole => targetRole.id === roleId)) {
+    if (!roleId || targetRoleIds.includes(roleId)) {
       return
     }
-    const targetRole = guildRoles?.get(roleId)
-    if (targetRole) {
-      targetRoles.push(targetRole)
+    if (guild.roles.cache.get(roleId)) {
+      targetRoleIds.push(roleId)
     } else {
       missingRoleIds.push(roleId)
     }
   })
-  const isEveryone = targetRoles.length === 0
+  const isEveryone = targetRoleIds.length === 0
 
-  // members
+  // firebase
+  const date = timeFormatter({ time: interaction.createdTimestamp, format: 'yyyyMMdd' })
   const attendedMembers: {
     id: string
     name: string
     roleId?: string
   }[] = []
-  const displayNamesUpdates: { [MemberID: string]: string } = {}
-  targetChannels.forEach(channel => {
+
+  voiceChannels.forEach(channel => {
+    if (!targetChannelIds.includes(channel.id)) {
+      return
+    }
     channel.members.forEach(member => {
-      if (!member.user.bot) {
-        attendedMembers.push({
-          id: member.id,
-          name: Util.escapeMarkdown(cache.names[member.id] || member.displayName).slice(0, 16),
-          roleId: isEveryone ? undefined : targetRoles.find(role => member.roles.cache.has(role.id))?.id,
-        })
-      }
-      if (cache.displayNames[guildId]?.[member.id] !== member.displayName) {
-        displayNamesUpdates[member.id] = member.displayName
-      }
+      const roleId = targetRoleIds.find(roleId => member.roleIds.includes(roleId))
+      attendedMembers.push({
+        id: member.id,
+        name: member.name,
+        roleId,
+      })
     })
   })
 
-  const date = moment(message.createdTimestamp).format('YYYYMMDD')
   await database.ref(`/records/${guildId}/${date}`).set(
     attendedMembers
       .map(member => member.id)
       .sort()
       .join(' '),
   )
-  if (Object.keys(displayNamesUpdates).length) {
-    cache.displayNames[guildId] = {
-      ...(cache.displayNames[guildId] || {}),
-      ...displayNamesUpdates,
-    }
-    await database.ref(`/displayNames/${guildId}`).update(displayNamesUpdates)
-  }
 
+  // response
   const warnings: string[] = []
   if (missingChannelIds.length) {
-    warnings.push(`:warning: 有 ${missingChannelIds.length} 個設定的語音頻道已被移除`)
+    warnings.push(
+      translate('record.warning.removedChannel', { guildId }).replace('{COUNT}', `${missingChannelIds.length}`),
+    )
   }
   if (missingRoleIds.length) {
-    warnings.push(`:warning: 有 ${missingRoleIds.length} 個設定的點名對象身份組已被移除`)
+    warnings.push(translate('record.warning.removedRoles', { guildId }).replace('{COUNT}', `${missingRoleIds.length}`))
   }
 
-  const fields: EmbedFieldData[] = []
+  const fields: APIEmbedField[] = []
   if (isEveryone) {
-    Util.splitMessage(
+    splitMessage(
       attendedMembers
-        .map(member => member.name)
+        .map(member => escapeMarkdown(member.name.slice(0, 16)))
         .sort()
         .join('\n'),
-      { maxLength: 1024 },
+      { length: 1000 },
     ).forEach((content, index) => {
       fields.push({
-        name: index === 0 ? `所有人：${attendedMembers.length} 人` : '.',
+        name: index === 0 ? `@everyone (${attendedMembers.length})` : '.',
         value: content.replace(/\n/g, '、'),
       })
     })
   } else {
-    targetRoles.forEach(role => {
+    targetRoleIds.forEach(targetRoleId => {
       const targetMembers = attendedMembers
-        .filter(member => member.roleId === role.id)
-        .map(member => member.name)
+        .filter(member => member.roleId === targetRoleId)
+        .map(member => escapeMarkdown(member.name.slice(0, 16)))
         .sort()
       if (targetMembers.length === 0) {
         return
       }
-      Util.splitMessage(targetMembers.join('\n'), { maxLength: 1024 }).forEach((content, index) => {
+      splitMessage(targetMembers.join('\n'), { length: 1000 }).forEach((content, index) => {
         fields.push({
-          name: index === 0 ? `${Util.escapeMarkdown(role.name)}：${targetMembers.length} 人` : '.',
+          name:
+            index === 0
+              ? `${escapeMarkdown(guild.roles.cache.get(targetRoleId)?.name || '')} (${targetMembers.length})`
+              : '.',
           value: content.replace(/\n/g, '、'),
         })
       })
@@ -129,20 +172,31 @@ const commandRecord: CommandProps = async ({ message, guildId }) => {
   }
 
   return {
-    content: ':triangular_flag_on_post: **GUILD_NAME** `DATE` 出席 COUNT 人'
-      .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
-      .replace('DATE', date)
-      .replace('COUNT', `${attendedMembers.filter(member => isEveryone || !!member.roleId).length}`),
+    content: translate('record.text.result', { guildId })
+      .replace('{GUILD_NAME}', escapeMarkdown(guild.name))
+      .replace('{DATE}', date)
+      .replace(
+        '{COUNT}',
+        `${isEveryone ? attendedMembers.length : attendedMembers.filter(member => member.roleId).length}`,
+      ),
     embed: {
-      description: '點名日期：`DATE`\n點名頻道：CHANNELS\n點名對象：ROLES\n\nWARNINGS'
-        .replace('DATE', date)
-        .replace('CHANNELS', targetChannels.map(channel => Util.escapeMarkdown(channel.name)).join('、'))
-        .replace('ROLES', isEveryone ? '@everyone' : targetRoles.map(role => `<@&${role.id}>`).join(' '))
-        .replace('WARNINGS', warnings.join('\n'))
+      description: translate('record.text.resultDescription', { guildId })
+        .replace('{DATE}', date)
+        .replace(
+          '{CHANNELS}',
+          targetChannelIds.map(channelId => escapeMarkdown(guild.channels.cache.get(channelId)?.name || '')).join('、'),
+        )
+        .replace('{ROLES}', isEveryone ? '@everyone' : targetRoleIds.map(roleId => `<@&${roleId}>`).join(' '))
+        .replace('{WARNINGS}', warnings.join('\n'))
         .trim(),
       fields,
     },
   }
 }
 
-export default commandRecord
+const command: CommandProps = {
+  build,
+  exec,
+}
+
+export default command

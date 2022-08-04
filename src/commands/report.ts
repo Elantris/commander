@@ -1,56 +1,75 @@
-import { EmbedFieldData, GuildMemberManager, Role, Util } from 'discord.js'
-import moment from 'moment'
-import { CommandProps } from '../types'
-import cache, { database } from '../utils/cache'
+import { APIEmbed, escapeMarkdown, Role, SlashCommandBuilder } from 'discord.js'
+import { DateTime } from 'luxon'
+import cache, { CommandProps, database } from '../utils/cache'
 import isAdmin from '../utils/isAdmin'
-import isValidDate from '../utils/isValidDate'
+import isDateValid from '../utils/isDateValid'
+import splitMessage from '../utils/splitMessage'
+import translate from '../utils/translate'
 
-const commandReport: CommandProps = async ({ message, guildId, args }) => {
-  if (!isAdmin(message.member)) {
+const build = new SlashCommandBuilder()
+  .setName('report')
+  .setDescription('統計一段時間內的出席狀況')
+  .setDescriptionLocalizations({
+    'en-US': 'Count the attendances during the interval.',
+  })
+  .addIntegerOption(option =>
+    option.setName('from').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
+  )
+  .addIntegerOption(option =>
+    option.setName('to').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
+  )
+  .toJSON()
+
+const exec: CommandProps['exec'] = async interaction => {
+  const guildId = interaction.guildId
+  const guild = interaction.guild
+  const from = interaction.options.getInteger('from')
+  const to = interaction.options.getInteger('to')
+
+  if (!guildId || !guild || !from || !to) {
+    return
+  }
+
+  if (!isAdmin(guild, interaction.user.id)) {
     return {
-      content: ':lock: 這個指令限「管理員」使用',
-      errorType: 'noAdmin',
+      content: translate('system.error.adminOnly', { guildId }),
     }
   }
 
-  if (args.length < 3) {
+  if (!isDateValid(`${from}`) || !isDateValid(`${to}`)) {
     return {
-      content: ':question: 請輸入開始日期與結束日期，格式為 `c!report YYYYMMDD YYYYMMDD`（西元年月日）',
-      errorType: 'syntax',
+      content: translate('report.error.invalidDate', { guildId }),
     }
   }
 
-  if (!isValidDate(args[1]) || !isValidDate(args[2])) {
+  const startDate = DateTime.fromFormat(`${from < to ? from : to}`, 'yyyyMMdd')
+  const endDate = DateTime.fromFormat(`${from > to ? from : to}`, 'yyyyMMdd')
+  const diff = endDate.diff(startDate, 'days').toObject()
+
+  if ((diff.days || 0) > 30) {
     return {
-      content: ':x: 請輸入正確的日期格式 `YYYYMMDD`（西元年月日）',
-      embed: {
-        description: `錯誤格式：\n${[args[1], args[2]]
-          .filter(date => !isValidDate(date))
-          .map(date => Util.escapeMarkdown(date))
-          .join('\n')}`,
-      },
-      errorType: 'syntax',
-    }
-  }
-  const startDate = args[1] < args[2] ? args[1] : args[2]
-  const endDate = args[1] > args[2] ? args[1] : args[2]
-  if (moment(endDate).diff(moment(startDate), 'days') > 31) {
-    return {
-      content: ':x: 查詢區間限一個月內',
-      errorType: 'syntax',
+      content: translate('report.error.invalidInterval', { guildId }),
     }
   }
 
-  const rawData: { [Date: string]: string } =
-    (await database.ref(`/records/${guildId}`).orderByKey().startAt(startDate).endAt(endDate).once('value')).val() || {}
+  const rawData: {
+    [Date: string]: string
+  } =
+    (
+      await database
+        .ref(`/records/${guildId}`)
+        .orderByKey()
+        .startAt(startDate.toFormat('yyyyMMdd'))
+        .endAt(endDate.toFormat('yyyyMMdd'))
+        .once('value')
+    ).val() || {}
 
   if (Object.keys(rawData).length === 0) {
     return {
-      content: ':triangular_flag_on_post: **GUILD_NAME** 在 `START_DATE` ~ `END_DATE` 這段時間內沒有紀錄'
-        .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
-        .replace('START_DATE', startDate)
-        .replace('END_DATE', endDate),
-      errorType: 'syntax',
+      content: translate('report.error.noRecordData', { guildId })
+        .replace('{GUILD_NAME}', escapeMarkdown(guild.name))
+        .replace('{START_DATE}', startDate.toFormat('yyyyMMdd'))
+        .replace('{END_DATE}', endDate.toFormat('yyyyMMdd')),
     }
   }
 
@@ -61,11 +80,13 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
     }
   } = {}
 
-  const guildRoles = await message.guild?.roles.fetch()
   const targetRoles: Role[] = []
   const missingRoleIds: string[] = []
   cache.settings[guildId]?.roles?.split(' ').forEach(roleId => {
-    const targetRole = guildRoles?.get(roleId)
+    if (!roleId) {
+      return
+    }
+    const targetRole = guild.roles.cache?.get(roleId)
     if (targetRole) {
       targetRoles.push(targetRole)
     } else {
@@ -81,7 +102,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
           attendedMembers[memberId].count += 1
         } else {
           attendedMembers[memberId] = {
-            name: cache.names[memberId] || cache.displayNames[guildId]?.[memberId] || memberId,
+            name: guild.members.cache.get(memberId)?.displayName || memberId,
             count: 1,
           }
         }
@@ -93,7 +114,7 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
         .filter(member => !member.user.bot)
         .forEach(member => {
           attendedMembers[member.id] = {
-            name: cache.names[member.id] || cache.displayNames[guildId]?.[member.id] || member.displayName,
+            name: member.displayName,
             count: 0,
           }
         })
@@ -109,36 +130,46 @@ const commandReport: CommandProps = async ({ message, guildId, args }) => {
   }
 
   const recordDates = Object.keys(rawData)
-  const fields: EmbedFieldData[] = []
+  const fields: APIEmbed['fields'] = []
   for (let i = recordDates.length; i > 0; i--) {
     const targetMembers = Object.values(attendedMembers)
       .filter(member => member.count === i)
-      .map(member => Util.escapeMarkdown(member.name.slice(0, 16)))
+      .map(member => escapeMarkdown(member.name.slice(0, 16)))
       .sort()
     if (targetMembers.length === 0) {
       continue
     }
-    Util.splitMessage(targetMembers.join('\n'), { maxLength: 1024 }).forEach((content, index) => {
+    splitMessage(targetMembers.join('\n'), { length: 1000 }).forEach((content, index) => {
       fields.push({
-        name: index === 0 ? `出席 ${i} 次：${targetMembers.length} 人` : '.',
+        name:
+          index === 0
+            ? translate('report.text.fieldTitle', { guildId })
+                .replace('{COUNT}', `${i}`)
+                .replace('{PEOPLE}', `${targetMembers.length}`)
+            : '.',
         value: content.replace(/\n/g, '、'),
       })
     })
   }
 
   return {
-    content: ':triangular_flag_on_post: **GUILD_NAME** 出席統計 `START_DATE` ~ `END_DATE`'
-      .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
-      .replace('START_DATE', startDate)
-      .replace('END_DATE', endDate),
+    content: translate('report.text.result', { guildId })
+      .replace('{GUILD_NAME}', escapeMarkdown(guild.name))
+      .replace('{START_DATE}', startDate.toFormat('yyyyMMdd'))
+      .replace('{END_DATE}', endDate.toFormat('yyyyMMdd')),
     embed: {
-      description: '點名日期：DATES（共 COUNT 次）\n點名對象：ROLES'
-        .replace('DATES', recordDates.map(date => `\`${date}\``).join(' '))
-        .replace('COUNT', `${recordDates.length}`)
-        .replace('ROLES', isEveryone ? '@everyone' : targetRoles.map(role => `<@&${role.id}>`).join(' ')),
+      description: translate('report.text.resultDescription', { guildId })
+        .replace('{DATES}', recordDates.map(date => `\`${date}\``).join(' '))
+        .replace('{COUNT}', `${recordDates.length}`)
+        .replace('{ROLES}', isEveryone ? '@everyone' : targetRoles.map(role => `<@&${role.id}>`).join(' ')),
       fields,
     },
   }
 }
 
-export default commandReport
+const command: CommandProps = {
+  build,
+  exec,
+}
+
+export default command

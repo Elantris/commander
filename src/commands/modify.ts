@@ -1,114 +1,103 @@
-import { Util } from 'discord.js'
-import { unionWith } from 'ramda'
-import { CommandProps } from '../types'
-import cache, { database } from '../utils/cache'
+import { SlashCommandBuilder } from 'discord.js'
+import { CommandProps, database } from '../utils/cache'
 import isAdmin from '../utils/isAdmin'
-import isValidDate from '../utils/isValidDate'
+import isDateValid from '../utils/isDateValid'
 import notEmpty from '../utils/notEmpty'
-import searchMembers from '../utils/searchMembers'
+import translate from '../utils/translate'
 
-const commandModify: CommandProps = async ({ message, guildId, args }) => {
-  if (!isAdmin(message.member)) {
+const build = new SlashCommandBuilder()
+  .setName('modify')
+  .setDescription('修改指定日期的出席紀錄')
+  .setDescriptionLocalizations({
+    'en-US': 'Edit record of specific date.',
+  })
+  .addIntegerOption(option =>
+    option.setName('date').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
+  )
+  .addStringOption(option =>
+    option
+      .setName('action')
+      .setDescription('新增或移除')
+      .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' })
+      .setRequired(true),
+  )
+  .addStringOption(option => option.setName('users').setDescription('標記成員').setRequired(true))
+  .toJSON()
+
+const exec: CommandProps['exec'] = async interaction => {
+  const guild = interaction.guild
+  const guildId = interaction.guildId
+  const date = interaction.options.getInteger('date')
+  const action = interaction.options.getString('action') === 'add' ? 'add' : 'remove'
+  const users = interaction.options.getString('users')
+
+  if (!guild || !guildId || !date || !users) {
+    return
+  }
+
+  if (!isAdmin(guild, interaction.user.id)) {
     return {
-      content: ':lock: 這個指令限「管理員」使用',
-      errorType: 'noAdmin',
+      content: translate('system.error.adminOnly', { guildId }),
     }
   }
 
-  if (args.length < 3) {
+  if (!isDateValid(`${date}`)) {
     return {
-      content: ':x: 需要選擇日期、目標成員，`c!modify YYYYMMDD members`',
-      errorType: 'syntax',
+      content: translate('report.error.invalidDate', { guildId }),
     }
   }
 
-  const date = args[1]
-  if (!isValidDate(date)) {
+  const targetMemberIds =
+    users
+      .match(/<@!?\d+>/gm)
+      ?.map(v => v.replace(/[<@!>]/g, ''))
+      .filter(notEmpty) || []
+
+  if (!targetMemberIds.length) {
     return {
-      content: ':x: 第一個參數要指定日期 YYYYMMDD（西元年月日）',
-      errorType: 'syntax',
+      content: translate('modify.error.noMentionedUsers', { guildId }),
     }
-  }
-
-  const targetMembers = unionWith((a, b) => a.id === b.id, await searchMembers(message, args.slice(2)), [
-    ...(message.mentions.members?.values() || []),
-  ])
-  if (targetMembers.length === 0) {
-    return {
-      content: ':x: 找不到指定的成員',
-      errorType: 'syntax',
-    }
-  }
-
-  const displayNamesUpdates: { [MemberID: string]: string } = {}
-
-  for (const member of targetMembers) {
-    if (cache.displayNames[guildId]?.[member.id] !== member.displayName) {
-      displayNamesUpdates[member.id] = member.displayName
-    }
-  }
-
-  if (Object.keys(displayNamesUpdates).length) {
-    cache.displayNames[guildId] = {
-      ...(cache.displayNames[guildId] || {}),
-      ...displayNamesUpdates,
-    }
-    await database.ref(`/displayNames/${guildId}`).update(displayNamesUpdates)
   }
 
   const record: string | undefined = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
+  const newRecord: { [UserID: string]: number } = {}
+  record?.split(' ').forEach(userId => {
+    newRecord[userId] = 1
+  })
 
-  const recordedMemberIds = record?.split(' ') || []
-  const addedMembers = targetMembers.filter(member => !record?.includes(member.id))
-  const removedMembers = targetMembers.filter(member => record?.includes(member.id))
+  if (action === 'add') {
+    targetMemberIds.forEach(userId => {
+      newRecord[userId] = 1
+    })
+  } else {
+    targetMemberIds.forEach(userId => {
+      delete newRecord[userId]
+    })
+  }
 
-  await database
-    .ref(`/records/${guildId}/${date}`)
-    .set(
-      [
-        ...recordedMemberIds.filter(id => !removedMembers.some(member => member.id === id)),
-        ...addedMembers.map(member => member.id),
-      ]
-        .sort()
-        .join(' '),
-    )
+  await database.ref(`/records/${guildId}/${date}`).set(Object.keys(newRecord).sort().join(' '))
 
   return {
-    content: ':triangular_flag_on_post: **GUILD_NAME** 修改記錄 `DATE`'
-      .replace('GUILD_NAME', Util.escapeMarkdown(message.guild?.name || ''))
-      .replace('DATE', date),
+    content: translate(action === 'add' ? 'modify.text.resultAdd' : 'modify.text.resultRemove', { guildId })
+      .replace('{GUILD_NAME}', guild.name)
+      .replace('{DATE}', `${date}`)
+      .replace('{COUNT}', `${targetMemberIds.length}`),
     embed: {
-      description: '點名日期：`DATE`'.replace('DATE', date),
-      fields: [
-        addedMembers.length
-          ? {
-              name: `新增成員 ${addedMembers.length} 人`,
-              value: addedMembers
-                .map(member =>
-                  Util.escapeMarkdown(
-                    (cache.names[member.id] || cache.displayNames[guildId]?.[member.id] || '').slice(0, 16),
-                  ),
-                )
-                .sort()
-                .join('、'),
-            }
-          : undefined,
-        removedMembers.length
-          ? {
-              name: `移除成員 ${removedMembers.length} 人`,
-              value: removedMembers
-                .map(member =>
-                  Util.escapeMarkdown(
-                    (cache.names[member.id] || cache.displayNames[guildId]?.[member.id] || '').slice(0, 16),
-                  ),
-                )
-                .sort()
-                .join('、'),
-            }
-          : undefined,
-      ].filter(notEmpty),
+      description: translate('modify.text.resultDescription', { guildId })
+        .replace('{DATE}', `${date}`)
+        .replace(
+          '{MEMBERS}',
+          targetMemberIds
+            .map(memberId => guild.members.cache.get(memberId)?.displayName || `<@!${memberId}>`)
+            .join(' '),
+        ),
     },
   }
 }
 
-export default commandModify
+const command: CommandProps = {
+  build,
+  exec,
+}
+
+export default command

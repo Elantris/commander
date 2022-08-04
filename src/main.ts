@@ -1,27 +1,13 @@
 import { Client } from 'discord.js'
-import moment from 'moment'
-import config from './config'
-import { loggerHook } from './utils/cache'
-import handleMessage from './utils/handleMessage'
+import appConfig from './appConfig'
+import handleInteraction from './handleInteraction'
+import handleReady from './handleReady'
 
 const client = new Client({
-  intents: (1 << 12) - 1 - (1 << 1) - (1 << 8),
+  intents: ['Guilds', 'GuildMembers', 'GuildVoiceStates'],
 })
 
-client.on('messageCreate', handleMessage)
+client.on('interactionCreate', interaction => handleInteraction(interaction))
+client.on('ready', client => handleReady(client))
 
-client.on('ready', () => {
-  loggerHook.send(
-    '`TIME` USER_TAG'
-      .replace('TIME', moment().format('YYYY-MM-DD HH:mm:ss'))
-      .replace('USER_TAG', client.user?.tag || ''),
-  )
-
-  setInterval(() => {
-    try {
-      client.user?.setActivity('Version 2021.11.01 | https://discord.gg/Ctwz4BB')
-    } catch {}
-  }, 60000)
-})
-
-client.login(config.DISCORD.TOKEN)
+client.login(appConfig.DISCORD.TOKEN)

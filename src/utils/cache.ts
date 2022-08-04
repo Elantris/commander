@@ -1,52 +1,72 @@
-import { WebhookClient } from 'discord.js'
+import { APIEmbed, ChatInputCommandInteraction, RESTPostAPIApplicationCommandsJSONBody, TextChannel } from 'discord.js'
 import admin, { ServiceAccount } from 'firebase-admin'
-import config from '../config'
+import { readdirSync } from 'fs'
+import { join } from 'path'
+import appConfig from '../appConfig'
 
+// type definitions
+export type CommandProps = {
+  build: RESTPostAPIApplicationCommandsJSONBody
+  exec: (interaction: ChatInputCommandInteraction) => Promise<{
+    content: string
+    embed?: APIEmbed
+  } | void>
+}
+
+export const locales = ['zh-TW', 'en-US'] as const
+export type LocaleType = typeof locales[number]
+
+export const isLocaleType = (target: LocaleType | string): target is LocaleType =>
+  !!locales.find(locale => locale === target)
+
+// load commands
+export const commands: { [CommandName in string]?: CommandProps } = {}
+export const commandBuilds: RESTPostAPIApplicationCommandsJSONBody[] = []
+
+readdirSync(join(__dirname, '../commands')).forEach(async filename => {
+  if (!filename.endsWith('.js') && !filename.endsWith('.ts')) {
+    return
+  }
+  const commandName = filename.split('.')[0]
+  const {
+    default: command,
+  }: {
+    default: CommandProps
+  } = await import(join(__dirname, '../commands', filename))
+
+  commands[commandName] = command
+  commandBuilds.push(command.build)
+})
+
+// firebase
 admin.initializeApp({
-  credential: admin.credential.cert(config.FIREBASE.serviceAccount as ServiceAccount),
-  databaseURL: config.FIREBASE.databaseURL,
+  credential: admin.credential.cert(appConfig.FIREBASE.serviceAccount as ServiceAccount),
+  databaseURL: appConfig.FIREBASE.databaseURL,
 })
 
 export const database = admin.database()
 const cache: {
   [key: string]: any
+  logChannel: TextChannel | null
   banned: {
     [GuildID in string]: any
   }
-  names: {
-    [UserID in string]?: string
+  isInit: {
+    [GuildID in string]?: boolean
   }
   settings: {
     [GuildID in string]?: {
+      locale?: LocaleType
       channels?: string
       roles?: string
-      prefix?: string
-      admins?: string
+      admin?: string
     }
-  }
-  displayNames: {
-    [GuildID in string]?: {
-      [MemberID in string]?: string
-    }
-  }
-  hints: {
-    [key in string]?: string
-  }
-  syntaxErrorsCounts: {
-    [UserID in string]?: number
-  }
-  noAdminErrorsCounts: {
-    [UserID in string]?: number
   }
 } = {
+  logChannel: null,
   banned: {},
-  displayNames: {},
-  hints: {},
-  names: {},
+  isInit: {},
   settings: {},
-
-  syntaxErrorsCounts: {},
-  noAdminErrorsCounts: {},
 }
 
 const updateCache = (snapshot: admin.database.DataSnapshot) => {
@@ -65,35 +85,5 @@ const removeCache = (snapshot: admin.database.DataSnapshot) => {
 database.ref('/banned').on('child_added', updateCache)
 database.ref('/banned').on('child_changed', updateCache)
 database.ref('/banned').on('child_removed', removeCache)
-database.ref('/hints').on('child_added', updateCache)
-database.ref('/hints').on('child_changed', updateCache)
-database.ref('/hints').on('child_removed', removeCache)
-database.ref('/names').on('child_added', updateCache)
-database.ref('/names').on('child_changed', updateCache)
-database.ref('/names').on('child_removed', removeCache)
-database.ref('/settings').on('child_added', updateCache)
-database.ref('/settings').on('child_changed', updateCache)
-database.ref('/settings').on('child_removed', removeCache)
-
-database
-  .ref('/displayNames')
-  .once('value')
-  .then(snapshot => {
-    cache.displayNames = snapshot.val() || {}
-  })
-
-export const loggerHook = new WebhookClient(config.DISCORD.LOGGER_HOOK)
-
-export const getHint: (key?: string) => string = key => {
-  if (key && cache.hints[key]) {
-    return cache.hints[key] || ''
-  }
-
-  const allHints = Object.values(cache.hints)
-  const pick = Math.floor(Math.random() * allHints.length)
-  const hint = allHints[pick] || ''
-
-  return hint
-}
 
 export default cache
