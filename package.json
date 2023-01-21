@@ -8,7 +8,8 @@
     "pm2": "pm2 start build/main.js --name commander --restart-delay 60000 && pm2 monit",
     "build": "rm -rf ./build/* && ./node_modules/.bin/tsc",
     "restart": "pm2 stop commander && pm2 reset commander && pm2 start commander && pm2 monit",
-    "dev": "NODE_ENV=development ts-node src/main.ts"
+    "dev": "NODE_ENV=development ts-node src/main.ts",
+    "push": "rsync -arvz build package.json pnpm-lock.yaml translations elantris@gcp:/home/elantris/project/commander"
   },
   "repository": {
     "type": "git",
@@ -22,17 +23,17 @@
   },
   "homepage": "https://github.com/Elantris/commander#readme",
   "dependencies": {
-    "discord.js": "^14.3.0",
-    "firebase-admin": "^11.0.1",
-    "luxon": "^3.0.3",
+    "discord.js": "^14.7.1",
+    "firebase-admin": "^11.4.1",
+    "luxon": "^3.2.1",
     "ramda": "^0.28.0"
   },
   "devDependencies": {
-    "@firebase/app-types": "~0.7.0",
-    "@types/luxon": "^3.0.0",
-    "@types/node": "^18.7.14",
-    "@types/ramda": "^0.28.15",
-    "@types/ws": "^8.5.3",
-    "typescript": "^4.8.2"
+    "@firebase/app-types": "~0.9.0",
+    "@types/luxon": "^3.2.0",
+    "@types/node": "^18.11.18",
+    "@types/ramda": "^0.28.20",
+    "@types/ws": "^8.5.4",
+    "typescript": "^4.9.4"
   }
 }

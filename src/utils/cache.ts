@@ -52,7 +52,7 @@ const cache: {
     [GuildID in string]: any
   }
   isInit: {
-    [GuildID in string]?: boolean
+    [GuildID in string]?: number
   }
   settings: {
     [GuildID in string]?: {

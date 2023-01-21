@@ -74,14 +74,12 @@ const getGuildConfigs: (
   const channels =
     (options?.channels || cache.settings[guild.id]?.channels)
       ?.split(' ')
-      .filter(channelId => guild.channels.cache.get(channelId))
-      .map(channelId => guild.channels.cache.get(channelId)?.name || '')
+      .map((channelId, index) => `${index + 1}. ${guild.channels.cache.get(channelId)?.name || channelId}`)
       .join('\n') || translate('config.text.defaultChannels', { locale })
   const roles =
     (options?.roles || cache.settings[guild.id]?.roles)
       ?.split(' ')
-      .filter(roleId => guild.roles.cache.get(roleId))
-      .map((roleId, index) => `\`${index + 1}.\` <@&${roleId}>`)
+      .map((roleId, index) => `${index + 1}. ${guild.roles.cache.get(roleId)?.name || roleId}`)
       .join('\n') || '@everyone'
   const admin =
     (options?.admin || guild.roles.cache.get(cache.settings[guild.id]?.admin || '')
@@ -111,7 +109,7 @@ const exec: CommandProps['exec'] = async interaction => {
     return
   }
 
-  if (!isAdmin) {
+  if (!isAdmin(guild, interaction.user.id)) {
     return {
       content: translate('system.error.adminOnly', { guildId }),
     }

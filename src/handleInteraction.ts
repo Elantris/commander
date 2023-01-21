@@ -8,30 +8,28 @@ const isProcessing: { [GuildID in string]?: boolean } = {}
 
 // handle commands
 const handleInteraction = async (interaction: Interaction) => {
-  const guildId = interaction.guildId
-  const guild = interaction.guild
-  if (!interaction.isChatInputCommand() || !guildId || !guild || isCooling[guildId] || isProcessing[guildId]) {
+  if (!interaction.inGuild() || !interaction.isChatInputCommand()) {
     return
   }
 
   const command = commands[interaction.commandName]
-  if (!command) {
+  const guildId = interaction.guildId
+  const guild = interaction.guild
+  if (!command || !guildId || !guild || isCooling[guildId] || isProcessing[guildId]) {
     return
   }
 
   isProcessing[guildId] = true
 
-  if (!cache.isInit[guildId]) {
+  if (interaction.createdTimestamp - (cache.isInit[guildId] || 0) > 3600000) {
     await guild.roles.fetch()
     await guild.members.fetch()
     cache.settings[guildId] = (await database.ref(`/settings/${guildId}`).once('value')).val() || {}
-    cache.isInit[guildId] = true
+    cache.isInit[guildId] = interaction.createdTimestamp
   }
 
   const commandResult = await command.exec(interaction)
-
   isProcessing[guildId] = false
-
   if (!commandResult) {
     return
   }
@@ -44,7 +42,7 @@ const handleInteraction = async (interaction: Interaction) => {
             color: 0xcc5de8,
             title: translate('system.text.support', { guildId }),
             url: 'https://discord.gg/Ctwz4BB',
-            footer: { text: 'Version 2022-09-02' },
+            footer: { text: 'Version 2023-01-10' },
             ...commandResult.embed,
           },
         ]

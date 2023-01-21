@@ -22,9 +22,8 @@ const sendLog = async (command: ChatInputCommandInteraction, response: Message) 
           },
           {
             name: 'Channel',
-            value: '{ID} {TYPE}\n{NAME}'
+            value: '{ID}\n{NAME}'
               .replace('{ID}', command.guildId || '--')
-              .replace('{TYPE}', command.channel?.type.toString() || '')
               .replace(
                 '{NAME}',
                 command.channel?.isTextBased() && command.channel.type !== ChannelType.DM
