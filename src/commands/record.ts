@@ -131,9 +131,23 @@ const exec: CommandProps['exec'] = async interaction => {
     warnings.push(
       translate('record.warning.removedChannel', { guildId }).replace('{COUNT}', `${missingChannelIds.length}`),
     )
+    let newValue = cache.settings[guildId]?.channels || ''
+    missingChannelIds.forEach(channelId => (newValue = newValue.replace(channelId, '')))
+    await database.ref(`/settings/${guildId}/channels`).set(newValue)
+    cache.settings[guildId] = {
+      ...cache.settings[guildId],
+      channels: newValue,
+    }
   }
   if (missingRoleIds.length) {
     warnings.push(translate('record.warning.removedRoles', { guildId }).replace('{COUNT}', `${missingRoleIds.length}`))
+    let newValue = cache.settings[guildId]?.roles || ''
+    missingRoleIds.forEach(roleId => (newValue = newValue.replace(roleId, '')))
+    await database.ref(`/settings/${guildId}/roles`).set(newValue)
+    cache.settings[guildId] = {
+      ...cache.settings[guildId],
+      roles: newValue,
+    }
   }
 
   const fields: APIEmbedField[] = []
@@ -194,9 +208,7 @@ const exec: CommandProps['exec'] = async interaction => {
   }
 }
 
-const command: CommandProps = {
+export default {
   build,
   exec,
 }
-
-export default command

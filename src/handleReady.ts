@@ -3,7 +3,7 @@ import appConfig from './appConfig'
 import cache, { commandBuilds } from './utils/cache'
 import timeFormatter from './utils/timeFormatter'
 
-const handleReady = async (client: Client) => {
+const handleReady = async (client: Client<true>) => {
   const logChannel = client.channels.cache.get(appConfig.DISCORD.LOG_CHANNEL_ID)
   if (logChannel?.type !== ChannelType.GuildText) {
     console.error('Logger channel not found.')
@@ -16,22 +16,20 @@ const handleReady = async (client: Client) => {
   try {
     await rest.put(Routes.applicationCommands(appConfig.DISCORD.CLIENT_ID), { body: commandBuilds })
   } catch (error: any) {
-    await logChannel.send(
-      '`{TIME}` Register slash commands error\n```{ERROR}```'
-        .replace('{TIME}', timeFormatter())
-        .replace('{ERROR}', error),
-    )
+    if (error instanceof Error) {
+      await logChannel.send(`\`${timeFormatter()}\` Register slash commands error\n\`\`\`${error.stack}\`\`\``)
+    }
   }
 
-  await logChannel.send(
-    '`{TIME}` {USER_TAG}'.replace('{TIME}', timeFormatter()).replace('{USER_TAG}', client.user?.tag || ''),
-  )
+  await logChannel.send(`\`${timeFormatter()}\` ${client.user.tag}`)
 
   setInterval(() => {
     try {
-      client.user?.setActivity(`on ${client.guilds.cache.size} guilds.`)
+      client.user.setActivity(`on ${client.guilds.cache.size} guilds.`)
     } catch {}
-  }, 60000)
+  }, 10000)
+
+  cache.isReady = true
 }
 
 export default handleReady

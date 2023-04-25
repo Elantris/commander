@@ -97,13 +97,7 @@ const getGuildConfigs: (
 }
 
 const exec: CommandProps['exec'] = async interaction => {
-  const guild = interaction.guild
-  const guildId = interaction.guildId
-  const action = interaction.options.getString('action') === 'add' ? 'add' : 'remove'
-  const locale = interaction.options.getString('locale')
-  const channel = interaction.options.getChannel('voice')
-  const roles = interaction.options.getString('roles')
-  const admin = interaction.options.getRole('role')
+  const { guildId, guild } = interaction
 
   if (!guild || !guildId) {
     return
@@ -114,6 +108,12 @@ const exec: CommandProps['exec'] = async interaction => {
       content: translate('system.error.adminOnly', { guildId }),
     }
   }
+
+  const action = interaction.options.getString('action') === 'add' ? 'add' : 'remove'
+  const locale = interaction.options.getString('locale')
+  const channel = interaction.options.getChannel('voice')
+  const roles = interaction.options.getString('roles')
+  const admin = interaction.options.getRole('role')
 
   if (locale) {
     if (!isLocaleType(locale)) {
@@ -145,11 +145,13 @@ const exec: CommandProps['exec'] = async interaction => {
         newChannelsMap[channelId] = 1
       }
     })
+
     if (action === 'add') {
       newChannelsMap[targetChannel.id] = 1
     } else {
       delete newChannelsMap[targetChannel.id]
     }
+
     const newValue = Object.keys(newChannelsMap).sort().join(' ')
     await database.ref(`/settings/${guildId}/channels`).set(newValue)
     cache.settings[guildId] = {
@@ -224,9 +226,7 @@ const exec: CommandProps['exec'] = async interaction => {
   return
 }
 
-const command: CommandProps = {
+export default {
   build,
   exec,
 }
-
-export default command

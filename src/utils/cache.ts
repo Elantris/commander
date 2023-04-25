@@ -14,8 +14,7 @@ export type CommandProps = {
 }
 
 export const locales = ['zh-TW', 'en-US'] as const
-export type LocaleType = typeof locales[number]
-
+export type LocaleType = (typeof locales)[number]
 export const isLocaleType = (target: LocaleType | string): target is LocaleType =>
   !!locales.find(locale => locale === target)
 
@@ -48,6 +47,7 @@ export const database = admin.database()
 const cache: {
   [key: string]: any
   logChannel: TextChannel | null
+  isReady: boolean
   banned: {
     [GuildID in string]: any
   }
@@ -64,6 +64,7 @@ const cache: {
   }
 } = {
   logChannel: null,
+  isReady: false,
   banned: {},
   isInit: {},
   settings: {},

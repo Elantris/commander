@@ -167,9 +167,7 @@ const exec: CommandProps['exec'] = async interaction => {
   }
 }
 
-const command: CommandProps = {
+export default {
   build,
   exec,
 }
-
-export default command

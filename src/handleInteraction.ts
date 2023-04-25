@@ -13,8 +13,7 @@ const handleInteraction = async (interaction: Interaction) => {
   }
 
   const command = commands[interaction.commandName]
-  const guildId = interaction.guildId
-  const guild = interaction.guild
+  const { guildId, guild } = interaction
   if (!command || !guildId || !guild || isCooling[guildId] || isProcessing[guildId]) {
     return
   }
@@ -42,7 +41,7 @@ const handleInteraction = async (interaction: Interaction) => {
             color: 0xcc5de8,
             title: translate('system.text.support', { guildId }),
             url: 'https://discord.gg/Ctwz4BB',
-            footer: { text: 'Version 2023-01-10' },
+            footer: { text: 'Version 2023-04-22' },
             ...commandResult.embed,
           },
         ]
