@@ -96,8 +96,7 @@ const exec: CommandProps['exec'] = async interaction => {
   })
   const isEveryone = targetRoleIds.length === 0
 
-  // firebase
-  const date = timeFormatter({ time: interaction.createdTimestamp, format: 'yyyyMMdd' })
+  // members
   const attendedMembers: {
     id: string
     name: string
@@ -118,15 +117,37 @@ const exec: CommandProps['exec'] = async interaction => {
     })
   })
 
-  await database.ref(`/records/${guildId}/${date}`).set(
-    attendedMembers
-      .map(member => member.id)
-      .sort()
-      .join(' '),
-  )
+  // firebase
+  const date = timeFormatter({ time: interaction.createdTimestamp, format: 'yyyyMMdd' })
+  if (!cache.records[guildId]) {
+    cache.records[guildId] = {}
+  }
+  if (!cache.records[guildId]?.[date]) {
+    cache.records[guildId][date] = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
+  }
+  const isDuplicated = !!cache.records[guildId][date]
+
+  const joinedMembers = cache.records[guildId][date]
+    ? attendedMembers.filter(member => !cache.records[guildId][date].includes(member.id))
+    : []
+  const leavedMemberIds = cache.records[guildId][date]
+    ? cache.records[guildId][date]
+        .split(' ')
+        .filter(memberId => !attendedMembers.find(member => member.id === memberId))
+    : []
+
+  const newValue = attendedMembers
+    .map(member => member.id)
+    .sort()
+    .join(' ')
+  cache.records[guildId][date] = newValue
+  await database.ref(`/records/${guildId}/${date}`).set(newValue)
 
   // response
   const warnings: string[] = []
+  if (isDuplicated) {
+    warnings.push(translate('record.warning.overwriteRecord'))
+  }
   if (missingChannelIds.length) {
     warnings.push(
       translate('record.warning.removedChannel', { guildId }).replace('{COUNT}', `${missingChannelIds.length}`),
@@ -151,6 +172,23 @@ const exec: CommandProps['exec'] = async interaction => {
   }
 
   const fields: APIEmbedField[] = []
+  if (joinedMembers.length) {
+    fields.push({
+      name: `${translate('record.text.joinedMembers')} (${joinedMembers.length})`,
+      value: joinedMembers.map(member => escapeMarkdown(member.name.slice(0, 16))).join('、'),
+    })
+  }
+  if (leavedMemberIds.length) {
+    fields.push({
+      name: `${translate('record.text.leavedMembers')} (${leavedMemberIds.length})`,
+      value: leavedMemberIds
+        .map(memberId => {
+          const member = guild.members.cache.get(memberId)
+          return member ? escapeMarkdown(member.displayName.slice(0, 16)) : `<@!${memberId}>`
+        })
+        .join('、'),
+    })
+  }
   if (isEveryone) {
     splitMessage(
       attendedMembers

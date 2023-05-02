@@ -62,12 +62,14 @@ const cache: {
       admin?: string
     }
   }
+  records: Record<string, Record<string, string>>
 } = {
   logChannel: null,
   isReady: false,
   banned: {},
   isInit: {},
   settings: {},
+  records: {},
 }
 
 const updateCache = (snapshot: admin.database.DataSnapshot) => {
