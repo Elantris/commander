@@ -130,6 +130,7 @@ const exec: CommandProps['exec'] = async interaction => {
     return {
       content: translate('config.text.updateLocale', { locale }),
       embed: getGuildConfigs(guild, { locale }),
+      isFinished: true,
     }
   } else if (channel) {
     const targetChannel = guild.channels.cache.get(channel.id)
@@ -165,6 +166,7 @@ const exec: CommandProps['exec'] = async interaction => {
         escapeMarkdown(targetChannel.name),
       ),
       embed: getGuildConfigs(guild, { channels: newValue }),
+      isFinished: true,
     }
   } else if (roles) {
     const isEveryone = /@everyone/.test(roles)
@@ -199,6 +201,7 @@ const exec: CommandProps['exec'] = async interaction => {
         targetRoles.map(role => escapeMarkdown(role.name)).join(' '),
       ),
       embed: getGuildConfigs(guild, { roles: newValue }),
+      isFinished: true,
     }
   } else if (admin) {
     const targetRole = guild.roles.cache.get(admin.id)
@@ -220,6 +223,7 @@ const exec: CommandProps['exec'] = async interaction => {
         escapeMarkdown(targetRole.name),
       ),
       embed: getGuildConfigs(guild, { admin: targetRole.id }),
+      isFinished: true,
     }
   }
 

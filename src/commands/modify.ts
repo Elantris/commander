@@ -25,8 +25,7 @@ const build = new SlashCommandBuilder()
   .toJSON()
 
 const exec: CommandProps['exec'] = async interaction => {
-  const guild = interaction.guild
-  const guildId = interaction.guildId
+  const { guild, guildId } = interaction
   const date = interaction.options.getInteger('date')
   const action = interaction.options.getString('action') === 'add' ? 'add' : 'remove'
   const users = interaction.options.getString('users')
@@ -92,6 +91,7 @@ const exec: CommandProps['exec'] = async interaction => {
             .join(' '),
         ),
     },
+    isFinished: true,
   }
 }
 

@@ -21,8 +21,7 @@ const build = new SlashCommandBuilder()
   .toJSON()
 
 const exec: CommandProps['exec'] = async interaction => {
-  const guildId = interaction.guildId
-  const guild = interaction.guild
+  const { guildId, guild } = interaction
   const from = interaction.options.getInteger('from')
   const to = interaction.options.getInteger('to')
 
@@ -164,6 +163,7 @@ const exec: CommandProps['exec'] = async interaction => {
         .replace('{ROLES}', isEveryone ? '@everyone' : targetRoles.map(role => `<@&${role.id}>`).join(' ')),
       fields,
     },
+    isFinished: true,
   }
 }
 

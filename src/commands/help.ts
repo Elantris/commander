@@ -20,6 +20,7 @@ const exec: CommandProps['exec'] = async interaction => {
     content: translate('help.text.summary', { guildId })
       .replace('{MANUAL}', 'https://hackmd.io/@eelayntris/commander')
       .replace('{DISCORD}', 'https://discord.gg/Ctwz4BB'),
+      isFinished: true,
   }
 }
 

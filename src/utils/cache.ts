@@ -10,6 +10,7 @@ export type CommandProps = {
   exec: (interaction: ChatInputCommandInteraction) => Promise<{
     content: string
     embed?: APIEmbed
+    isFinished?: boolean
   } | void>
 }
 
