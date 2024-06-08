@@ -15,7 +15,7 @@ export const handleGuildCreate = async (guild: Guild) => {
     bots: 0,
   }
 
-  guild.channels.cache.forEach(channel => {
+  guild.channels.cache.forEach((channel) => {
     if (channel.isVoiceBased()) {
       count.voiceChannels++
     } else if (channel.isThread()) {
@@ -27,7 +27,7 @@ export const handleGuildCreate = async (guild: Guild) => {
 
   await guild.members.fetch()
   const owner = await guild.fetchOwner()
-  guild.members.cache.forEach(member => {
+  guild.members.cache.forEach((member) => {
     if (member.user.bot) {
       count.bots++
     } else {

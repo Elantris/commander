@@ -10,14 +10,14 @@ const build = new SlashCommandBuilder()
   .setDescriptionLocalizations({
     'en-US': 'Edit the configurations of Commander.',
   })
-  .addSubcommand(subcommand =>
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('locale')
       .setDescription('變更機器人語言')
       .setDescriptionLocalizations({
         'en-US': 'Change bot language.',
       })
-      .addStringOption(option =>
+      .addStringOption((option) =>
         option
           .setName('locale')
           .setDescription('語言環境')
@@ -25,39 +25,39 @@ const build = new SlashCommandBuilder()
           .setChoices({ name: 'zh-TW', value: 'zh-TW' }, { name: 'en-US', value: 'en-US' }),
       ),
   )
-  .addSubcommand(subcommand =>
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('channels')
       .setDescription('編輯點名頻道')
       .setDescriptionLocalizations({
         'en-US': 'Edit target voice channels.',
       })
-      .addStringOption(option =>
+      .addStringOption((option) =>
         option
           .setName('action')
           .setDescription('新增或移除')
           .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' })
           .setRequired(true),
       )
-      .addChannelOption(option => option.setName('voice').setDescription('請選擇一個語音頻道').setRequired(true)),
+      .addChannelOption((option) => option.setName('voice').setDescription('請選擇一個語音頻道').setRequired(true)),
   )
-  .addSubcommand(subcommand =>
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('roles')
       .setDescription('編輯點名對象')
       .setDescriptionLocalizations({
         'en-US': 'Edit target roles.',
       })
-      .addStringOption(option => option.setName('roles').setDescription('請標記身份組').setRequired(true)),
+      .addStringOption((option) => option.setName('roles').setDescription('請標記身份組').setRequired(true)),
   )
-  .addSubcommand(subcommand =>
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('admin')
       .setDescription('設定點名隊長')
       .setDescriptionLocalizations({
         'en-US': 'Make a role able to use commands.',
       })
-      .addRoleOption(option => option.setName('role').setDescription('請選擇一個身份組').setRequired(true)),
+      .addRoleOption((option) => option.setName('role').setDescription('請選擇一個身份組').setRequired(true)),
   )
   .toJSON()
 
@@ -96,7 +96,7 @@ const getGuildConfigs: (
   }
 }
 
-const exec: CommandProps['exec'] = async interaction => {
+const exec: CommandProps['exec'] = async (interaction) => {
   const { guildId, guild } = interaction
 
   if (!guild || !guildId) {
@@ -141,7 +141,7 @@ const exec: CommandProps['exec'] = async interaction => {
     }
 
     const newChannelsMap: { [ChannelID: string]: number } = {}
-    cache.settings[guildId]?.channels?.split(' ').forEach(channelId => {
+    cache.settings[guildId]?.channels?.split(' ').forEach((channelId) => {
       if (guild.channels.cache.get(channelId)) {
         newChannelsMap[channelId] = 1
       }
@@ -173,7 +173,7 @@ const exec: CommandProps['exec'] = async interaction => {
     const targetRoles =
       roles
         .match(/<@&\d+>/gm)
-        ?.map(v => guild.roles.cache.get(v.slice(3, -1)))
+        ?.map((v) => guild.roles.cache.get(v.slice(3, -1)))
         .filter(notEmpty) || []
 
     if (!isEveryone && !targetRoles.length) {
@@ -182,7 +182,7 @@ const exec: CommandProps['exec'] = async interaction => {
       }
     }
 
-    const newValue = isEveryone ? '' : targetRoles.map(role => role.id).join(' ')
+    const newValue = isEveryone ? '' : targetRoles.map((role) => role.id).join(' ')
 
     if (isEveryone) {
       await database.ref(`/settings/${guildId}/roles`).set(null)
@@ -198,7 +198,7 @@ const exec: CommandProps['exec'] = async interaction => {
     return {
       content: translate('config.text.updateRoles', { guildId }).replace(
         '{ROLE_NAMES}',
-        targetRoles.map(role => escapeMarkdown(role.name)).join(' '),
+        targetRoles.map((role) => escapeMarkdown(role.name)).join(' '),
       ),
       embed: getGuildConfigs(guild, { roles: newValue }),
       isFinished: true,

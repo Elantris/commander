@@ -11,20 +11,20 @@ const build = new SlashCommandBuilder()
   .setDescriptionLocalizations({
     'en-US': 'Edit record of specific date.',
   })
-  .addIntegerOption(option =>
+  .addIntegerOption((option) =>
     option.setName('date').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
   )
-  .addStringOption(option =>
+  .addStringOption((option) =>
     option
       .setName('action')
       .setDescription('新增或移除')
       .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' })
       .setRequired(true),
   )
-  .addStringOption(option => option.setName('users').setDescription('標記成員').setRequired(true))
+  .addStringOption((option) => option.setName('users').setDescription('標記成員').setRequired(true))
   .toJSON()
 
-const exec: CommandProps['exec'] = async interaction => {
+const exec: CommandProps['exec'] = async (interaction) => {
   const { guild, guildId } = interaction
   const date = interaction.options.getInteger('date')
   const action = interaction.options.getString('action') === 'add' ? 'add' : 'remove'
@@ -49,7 +49,7 @@ const exec: CommandProps['exec'] = async interaction => {
   const targetMemberIds =
     users
       .match(/<@!?\d+>/gm)
-      ?.map(v => v.replace(/[<@!>]/g, ''))
+      ?.map((v) => v.replace(/[<@!>]/g, ''))
       .filter(notEmpty) || []
 
   if (!targetMemberIds.length) {
@@ -60,16 +60,16 @@ const exec: CommandProps['exec'] = async interaction => {
 
   const record: string | undefined = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
   const newRecord: { [UserID: string]: number } = {}
-  record?.split(' ').forEach(userId => {
+  record?.split(' ').forEach((userId) => {
     newRecord[userId] = 1
   })
 
   if (action === 'add') {
-    targetMemberIds.forEach(userId => {
+    targetMemberIds.forEach((userId) => {
       newRecord[userId] = 1
     })
   } else {
-    targetMemberIds.forEach(userId => {
+    targetMemberIds.forEach((userId) => {
       delete newRecord[userId]
     })
   }
@@ -87,7 +87,7 @@ const exec: CommandProps['exec'] = async interaction => {
         .replace(
           '{MEMBERS}',
           targetMemberIds
-            .map(memberId => guild.members.cache.get(memberId)?.displayName || `<@!${memberId}>`)
+            .map((memberId) => guild.members.cache.get(memberId)?.displayName || `<@!${memberId}>`)
             .join(' '),
         ),
     },

@@ -12,15 +12,15 @@ const build = new SlashCommandBuilder()
   .setDescriptionLocalizations({
     'en-US': 'Count the attendances during the interval.',
   })
-  .addIntegerOption(option =>
+  .addIntegerOption((option) =>
     option.setName('from').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
   )
-  .addIntegerOption(option =>
+  .addIntegerOption((option) =>
     option.setName('to').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
   )
   .toJSON()
 
-const exec: CommandProps['exec'] = async interaction => {
+const exec: CommandProps['exec'] = async (interaction) => {
   const { guildId, guild } = interaction
   const from = interaction.options.getInteger('from')
   const to = interaction.options.getInteger('to')
@@ -81,7 +81,7 @@ const exec: CommandProps['exec'] = async interaction => {
 
   const targetRoles: Role[] = []
   const missingRoleIds: string[] = []
-  cache.settings[guildId]?.roles?.split(' ').forEach(roleId => {
+  cache.settings[guildId]?.roles?.split(' ').forEach((roleId) => {
     if (!roleId) {
       return
     }
@@ -95,8 +95,8 @@ const exec: CommandProps['exec'] = async interaction => {
   const isEveryone = targetRoles.length === 0
 
   if (isEveryone) {
-    Object.values(rawData).forEach(record => {
-      record.split(' ').forEach(memberId => {
+    Object.values(rawData).forEach((record) => {
+      record.split(' ').forEach((memberId) => {
         if (attendedMembers[memberId]) {
           attendedMembers[memberId].count += 1
         } else {
@@ -108,21 +108,21 @@ const exec: CommandProps['exec'] = async interaction => {
       })
     })
   } else {
-    targetRoles.forEach(role => {
+    targetRoles.forEach((role) => {
       role.members
-        .filter(member => !member.user.bot)
-        .forEach(member => {
+        .filter((member) => !member.user.bot)
+        .forEach((member) => {
           attendedMembers[member.id] = {
             name: member.displayName,
             count: 0,
           }
         })
     })
-    Object.values(rawData).forEach(record => {
+    Object.values(rawData).forEach((record) => {
       record
         .split(' ')
-        .filter(memberId => !!attendedMembers[memberId])
-        .forEach(memberId => {
+        .filter((memberId) => !!attendedMembers[memberId])
+        .forEach((memberId) => {
           attendedMembers[memberId].count += 1
         })
     })
@@ -132,8 +132,8 @@ const exec: CommandProps['exec'] = async interaction => {
   const fields: APIEmbed['fields'] = []
   for (let i = recordDates.length; i > 0; i--) {
     const targetMembers = Object.values(attendedMembers)
-      .filter(member => member.count === i)
-      .map(member => escapeMarkdown(member.name.slice(0, 16)))
+      .filter((member) => member.count === i)
+      .map((member) => escapeMarkdown(member.name.slice(0, 16)))
       .sort()
     if (targetMembers.length === 0) {
       continue
@@ -158,9 +158,9 @@ const exec: CommandProps['exec'] = async interaction => {
       .replace('{END_DATE}', endDate.toFormat('yyyyMMdd')),
     embed: {
       description: translate('report.text.resultDescription', { guildId })
-        .replace('{DATES}', recordDates.map(date => `\`${date}\``).join(' '))
+        .replace('{DATES}', recordDates.map((date) => `\`${date}\``).join(' '))
         .replace('{COUNT}', `${recordDates.length}`)
-        .replace('{ROLES}', isEveryone ? '@everyone' : targetRoles.map(role => `<@&${role.id}>`).join(' ')),
+        .replace('{ROLES}', isEveryone ? '@everyone' : targetRoles.map((role) => `<@&${role.id}>`).join(' ')),
       fields,
     },
     isFinished: true,

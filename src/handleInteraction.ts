@@ -63,7 +63,7 @@ const handleInteraction = async (interaction: Interaction) => {
             color: 0xcc5de8,
             title: translate('system.text.support', { guildId }),
             url: 'https://discord.gg/Ctwz4BB',
-            footer: { text: 'Version 2023-06-28' },
+            footer: { text: 'Version 2024-01-23' },
             ...commandResult.embed,
           },
         ]

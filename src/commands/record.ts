@@ -13,7 +13,7 @@ const build = new SlashCommandBuilder()
   })
   .toJSON()
 
-const exec: CommandProps['exec'] = async interaction => {
+const exec: CommandProps['exec'] = async (interaction) => {
   const { guildId, guild } = interaction
 
   if (!guildId || !guild) {
@@ -38,21 +38,21 @@ const exec: CommandProps['exec'] = async interaction => {
   }[] = []
   let memberCurrentChannelId = ''
 
-  guild.channels.cache.forEach(channel => {
+  guild.channels.cache.forEach((channel) => {
     if (!channel.isVoiceBased() || channel.members.size === 0) {
       return
     }
     voiceChannels.push({
       id: channel.id,
       name: channel.name,
-      members: channel.members.map(member => {
+      members: channel.members.map((member) => {
         if (member.id === interaction.user.id) {
           memberCurrentChannelId = channel.id
         }
         return {
           id: member.id,
           name: member.displayName,
-          roleIds: member.roles.cache.map(role => role.id),
+          roleIds: member.roles.cache.map((role) => role.id),
         }
       }),
     })
@@ -68,7 +68,7 @@ const exec: CommandProps['exec'] = async interaction => {
   const targetChannelIds: string[] = [memberCurrentChannelId]
   const missingChannelIds: string[] = []
 
-  cache.settings[guildId]?.channels?.split(' ').forEach(channelId => {
+  cache.settings[guildId]?.channels?.split(' ').forEach((channelId) => {
     if (!channelId || targetChannelIds.includes(channelId)) {
       return
     }
@@ -83,7 +83,7 @@ const exec: CommandProps['exec'] = async interaction => {
   const targetRoleIds: string[] = []
   const missingRoleIds: string[] = []
 
-  cache.settings[guildId]?.roles?.split(' ').forEach(roleId => {
+  cache.settings[guildId]?.roles?.split(' ').forEach((roleId) => {
     if (!roleId || targetRoleIds.includes(roleId)) {
       return
     }
@@ -102,12 +102,12 @@ const exec: CommandProps['exec'] = async interaction => {
     roleId?: string
   }[] = []
 
-  voiceChannels.forEach(channel => {
+  voiceChannels.forEach((channel) => {
     if (!targetChannelIds.includes(channel.id)) {
       return
     }
-    channel.members.forEach(member => {
-      const roleId = targetRoleIds.find(roleId => member.roleIds.includes(roleId))
+    channel.members.forEach((member) => {
+      const roleId = targetRoleIds.find((roleId) => member.roleIds.includes(roleId))
       attendedMembers.push({
         id: member.id,
         name: member.name,
@@ -125,16 +125,16 @@ const exec: CommandProps['exec'] = async interaction => {
     cache.records[guildId][date] = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
   }
   const joinedMembers = cache.records[guildId][date]
-    ? attendedMembers.filter(member => !cache.records[guildId][date].includes(member.id))
+    ? attendedMembers.filter((member) => !cache.records[guildId][date].includes(member.id))
     : []
   const leavedMemberIds = cache.records[guildId][date]
     ? cache.records[guildId][date]
         .split(' ')
-        .filter(memberId => !attendedMembers.find(member => member.id === memberId))
+        .filter((memberId) => !attendedMembers.find((member) => member.id === memberId))
     : []
   const isNewRecord = !!cache.records[guildId][date]
   const newRecordValue = attendedMembers
-    .map(member => member.id)
+    .map((member) => member.id)
     .sort()
     .join(' ')
   cache.records[guildId][date] = newRecordValue
@@ -147,7 +147,7 @@ const exec: CommandProps['exec'] = async interaction => {
       translate('record.warning.removedChannel', { guildId }).replace('{COUNT}', `${missingChannelIds.length}`),
     )
     let newChannels = cache.settings[guildId]?.channels || ''
-    missingChannelIds.forEach(channelId => (newChannels = newChannels.replace(channelId, '')))
+    missingChannelIds.forEach((channelId) => (newChannels = newChannels.replace(channelId, '')))
     await database.ref(`/settings/${guildId}/channels`).set(newChannels)
     cache.settings[guildId] = {
       ...cache.settings[guildId],
@@ -157,7 +157,7 @@ const exec: CommandProps['exec'] = async interaction => {
   if (missingRoleIds.length) {
     warnings.push(translate('record.warning.removedRoles', { guildId }).replace('{COUNT}', `${missingRoleIds.length}`))
     let newRoleIds = cache.settings[guildId]?.roles || ''
-    missingRoleIds.forEach(roleId => (newRoleIds = newRoleIds.replace(roleId, '')))
+    missingRoleIds.forEach((roleId) => (newRoleIds = newRoleIds.replace(roleId, '')))
     await database.ref(`/settings/${guildId}/roles`).set(newRoleIds)
     cache.settings[guildId] = {
       ...cache.settings[guildId],
@@ -166,12 +166,12 @@ const exec: CommandProps['exec'] = async interaction => {
   }
 
   const fields: APIEmbedField[] = []
-  if (isNewRecord) {
+  if (isNewRecord && attendedMembers.length > 100) {
     if (joinedMembers.length) {
       fields.push({
         name: `${translate('record.text.joinedMembers')} (${joinedMembers.length})`,
         value: joinedMembers
-          .map(member => escapeMarkdown(member.name.slice(0, 16)))
+          .map((member) => escapeMarkdown(member.name.slice(0, 16)))
           .sort()
           .join('、'),
       })
@@ -180,7 +180,7 @@ const exec: CommandProps['exec'] = async interaction => {
       fields.push({
         name: `${translate('record.text.leavedMembers')} (${leavedMemberIds.length})`,
         value: leavedMemberIds
-          .map(memberId => {
+          .map((memberId) => {
             const member = guild.members.cache.get(memberId)
             return member ? escapeMarkdown(member.displayName.slice(0, 16)) : `<@!${memberId}>`
           })
@@ -191,7 +191,7 @@ const exec: CommandProps['exec'] = async interaction => {
   } else if (isEveryone) {
     splitMessage(
       attendedMembers
-        .map(member => escapeMarkdown(member.name.slice(0, 16)))
+        .map((member) => escapeMarkdown(member.name.slice(0, 16)))
         .sort()
         .join('\n'),
       { length: 1000 },
@@ -202,14 +202,14 @@ const exec: CommandProps['exec'] = async interaction => {
       })
     })
   } else {
-    targetRoleIds.forEach(targetRoleId => {
-      const targetRoleMembers = attendedMembers.filter(member => member.roleId === targetRoleId)
+    targetRoleIds.forEach((targetRoleId) => {
+      const targetRoleMembers = attendedMembers.filter((member) => member.roleId === targetRoleId)
       if (targetRoleMembers.length === 0) {
         return
       }
       splitMessage(
         targetRoleMembers
-          .map(member => escapeMarkdown(member.name.slice(0, 16)))
+          .map((member) => escapeMarkdown(member.name.slice(0, 16)))
           .sort()
           .join('\n'),
         { length: 1000 },
@@ -233,7 +233,7 @@ const exec: CommandProps['exec'] = async interaction => {
       .replace('{DATE}', date)
       .replace(
         '{COUNT}',
-        `${isEveryone ? attendedMembers.length : attendedMembers.filter(member => member.roleId).length}`,
+        `${isEveryone ? attendedMembers.length : attendedMembers.filter((member) => member.roleId).length}`,
       ),
     embed: {
       description: translate('record.text.resultDescription', { guildId })
@@ -241,9 +241,11 @@ const exec: CommandProps['exec'] = async interaction => {
         .replace('{IS_NEW}', isNewRecord ? ':warning:' : ':white_check_mark:')
         .replace(
           '{CHANNELS}',
-          targetChannelIds.map(channelId => escapeMarkdown(guild.channels.cache.get(channelId)?.name || '')).join('、'),
+          targetChannelIds
+            .map((channelId) => escapeMarkdown(guild.channels.cache.get(channelId)?.name || ''))
+            .join('、'),
         )
-        .replace('{ROLES}', isEveryone ? '@everyone' : targetRoleIds.map(roleId => `<@&${roleId}>`).join(' '))
+        .replace('{ROLES}', isEveryone ? '@everyone' : targetRoleIds.map((roleId) => `<@&${roleId}>`).join(' '))
         .replace('{WARNINGS}', warnings.join('\n'))
         .trim(),
       fields,

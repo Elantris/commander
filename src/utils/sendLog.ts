@@ -15,26 +15,21 @@ const sendLog = async (command: ChatInputCommandInteraction, response: Message) 
         fields: [
           {
             name: 'Guild',
-            value: '{ID}\n{NAME}'
-              .replace('{ID}', command.guildId || '--')
-              .replace('{NAME}', escapeMarkdown(command.guild?.name || '--')),
+            value: `${command.guildId || '--'}\n${escapeMarkdown(command.guild?.name || '--')}`,
             inline: true,
           },
           {
             name: 'Channel',
-            value: '{ID}\n{NAME}'
-              .replace('{ID}', command.guildId || '--')
-              .replace(
-                '{NAME}',
-                command.channel?.isTextBased() && command.channel.type !== ChannelType.DM
-                  ? escapeMarkdown(command.channel.name)
-                  : '--',
-              ),
+            value: `${command.guildId || '--'}\n${
+              command.channel?.isTextBased() && command.channel.type !== ChannelType.DM
+                ? escapeMarkdown(command.channel.name)
+                : '--'
+            }`,
             inline: true,
           },
           {
             name: 'User',
-            value: '{ID}\n{NAME}'.replace('{ID}', command.user.id).replace('{NAME}', escapeMarkdown(command.user.tag)),
+            value: `${command.user.id}\n${command.user.tag}`,
             inline: true,
           },
         ],
