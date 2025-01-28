@@ -8,7 +8,7 @@
   "record.warning.removedChannel": ":warning: 有 {COUNT} 個設定的語音頻道已被移除",
   "record.warning.removedRoles": ":warning: 有 {COUNT} 個設定的點名對象身份組已被移除",
   "record.text.result": ":triangular_flag_on_post: **{GUILD_NAME}** `{DATE}` 出席 {COUNT} 人",
-  "record.text.resultDescription": "點名日期：`{DATE}` {IS_NEW}\n點名頻道：{CHANNELS}\n點名對象：{ROLES}\n\n{WARNINGS}",
+  "record.text.resultDescription": "點名日期：`{DATE}`\n點名頻道：{CHANNELS}\n點名對象：{ROLES}\n\n{WARNINGS}",
   "record.warning.overwriteRecord": ":warning: 新的點名紀錄已覆蓋",
   "record.text.joinedMembers": "中途加入",
   "record.text.leavedMembers": "中途離開",

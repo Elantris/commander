@@ -1,9 +1,13 @@
-import { ChannelType, ChatInputCommandInteraction, escapeMarkdown, Message } from 'discord.js'
+import { ChatInputCommandInteraction, escapeMarkdown, Message } from 'discord.js'
 import cache from './cache'
 
 import timeFormatter from './timeFormatter'
 
-const sendLog = async (command: ChatInputCommandInteraction, response: Message) => {
+const sendLog = async (command: ChatInputCommandInteraction, response?: Message | null) => {
+  if (!command.inGuild() || !response) {
+    return
+  }
+
   await cache.logChannel?.send({
     content: '[`{TIME}`] `{COMMAND}`\n{RESPONSE}'
       .replace('{TIME}', timeFormatter({ time: command.createdTimestamp }))
@@ -20,11 +24,7 @@ const sendLog = async (command: ChatInputCommandInteraction, response: Message) 
           },
           {
             name: 'Channel',
-            value: `${command.guildId || '--'}\n${
-              command.channel?.isTextBased() && command.channel.type !== ChannelType.DM
-                ? escapeMarkdown(command.channel.name)
-                : '--'
-            }`,
+            value: `${command.channelId || '--'}\n${escapeMarkdown(command.channel?.name || '--')}`,
             inline: true,
           },
           {
@@ -39,6 +39,7 @@ const sendLog = async (command: ChatInputCommandInteraction, response: Message) 
         timestamp: command.createdAt.toISOString(),
       },
     ],
+    allowedMentions: { parse: [] },
   })
 }
 

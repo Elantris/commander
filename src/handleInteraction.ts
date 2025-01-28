@@ -7,9 +7,9 @@ const isCooling: { [GuildID in string]?: boolean } = {}
 const isProcessing: { [GuildID in string]?: boolean } = {}
 const coolingTime: { [CommandName in string]?: number } = {
   config: 5000,
-  modify: 10000,
-  record: 60000,
-  report: 60000,
+  modify: 20000,
+  record: 20000,
+  report: 20000,
 }
 
 // handle commands
@@ -63,12 +63,12 @@ const handleInteraction = async (interaction: Interaction) => {
             color: 0xcc5de8,
             title: translate('system.text.support', { guildId }),
             url: 'https://discord.gg/Ctwz4BB',
-            footer: { text: 'Version 2024-01-23' },
+            footer: { text: 'Version 2025-01-24' },
             ...commandResult.embed,
           },
         ]
       : undefined,
-    fetchReply: true,
+    withResponse: true,
   })
 
   isCooling[guildId] = true
@@ -79,7 +79,7 @@ const handleInteraction = async (interaction: Interaction) => {
     commandResult.isFinished ? coolingTime[interaction.commandName] ?? 3000 : 3000,
   )
 
-  await sendLog(interaction, response)
+  await sendLog(interaction, response.resource?.message)
 }
 
 export default handleInteraction

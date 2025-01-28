@@ -11,6 +11,15 @@ const build = new SlashCommandBuilder()
   .setDescriptionLocalizations({
     'en-US': 'Record all members in voice channels.',
   })
+  .addStringOption((option) =>
+    option
+      .setName('mode')
+      .setDescription('紀錄模式')
+      .setDescriptionLocalizations({
+        'en-US': 'Record mode',
+      })
+      .addChoices({ name: 'append', value: 'append' }),
+  )
   .toJSON()
 
 const exec: CommandProps['exec'] = async (interaction) => {
@@ -26,7 +35,7 @@ const exec: CommandProps['exec'] = async (interaction) => {
     }
   }
 
-  // members
+  // record all members in all voice channels
   const voiceChannels: {
     id: string
     name: string
@@ -124,6 +133,7 @@ const exec: CommandProps['exec'] = async (interaction) => {
   if (!cache.records[guildId]?.[date]) {
     cache.records[guildId][date] = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
   }
+
   const joinedMembers = cache.records[guildId][date]
     ? attendedMembers.filter((member) => !cache.records[guildId][date].includes(member.id))
     : []
@@ -132,9 +142,12 @@ const exec: CommandProps['exec'] = async (interaction) => {
         .split(' ')
         .filter((memberId) => !attendedMembers.find((member) => member.id === memberId))
     : []
-  const isNewRecord = !!cache.records[guildId][date]
+
+  const isUpdatedRecord = !!cache.records[guildId][date]
+  const isAppendMode = interaction.options.getString('mode') === 'append'
   const newRecordValue = attendedMembers
     .map((member) => member.id)
+    .concat(isAppendMode ? leavedMemberIds : [])
     .sort()
     .join(' ')
   cache.records[guildId][date] = newRecordValue
@@ -166,7 +179,7 @@ const exec: CommandProps['exec'] = async (interaction) => {
   }
 
   const fields: APIEmbedField[] = []
-  if (isNewRecord && attendedMembers.length > 100) {
+  if (isAppendMode || (isUpdatedRecord && attendedMembers.length > 100)) {
     if (joinedMembers.length) {
       fields.push({
         name: `${translate('record.text.joinedMembers')} (${joinedMembers.length})`,
@@ -176,7 +189,7 @@ const exec: CommandProps['exec'] = async (interaction) => {
           .join('、'),
       })
     }
-    if (leavedMemberIds.length) {
+    if (leavedMemberIds.length && !isAppendMode) {
       fields.push({
         name: `${translate('record.text.leavedMembers')} (${leavedMemberIds.length})`,
         value: leavedMemberIds
@@ -233,12 +246,11 @@ const exec: CommandProps['exec'] = async (interaction) => {
       .replace('{DATE}', date)
       .replace(
         '{COUNT}',
-        `${isEveryone ? attendedMembers.length : attendedMembers.filter((member) => member.roleId).length}`,
+        `${(isEveryone ? attendedMembers.length : attendedMembers.filter((member) => member.roleId).length) + (isAppendMode ? leavedMemberIds.length : 0)}`,
       ),
     embed: {
       description: translate('record.text.resultDescription', { guildId })
         .replace('{DATE}', date)
-        .replace('{IS_NEW}', isNewRecord ? ':warning:' : ':white_check_mark:')
         .replace(
           '{CHANNELS}',
           targetChannelIds
