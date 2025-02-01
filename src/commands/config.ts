@@ -11,6 +11,11 @@ const build = new SlashCommandBuilder()
     'en-US': 'Edit the configurations of Commander.',
   })
   .addSubcommand((subcommand) =>
+    subcommand.setName('all').setDescription('列出當前所有設定').setDescriptionLocalizations({
+      'en-US': 'Show all configs.',
+    }),
+  )
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('locale')
       .setDescription('變更機器人語言')
@@ -21,8 +26,20 @@ const build = new SlashCommandBuilder()
         option
           .setName('locale')
           .setDescription('語言環境')
+          .setDescriptionLocalizations({
+            'en-US': 'Choose language.',
+          })
           .setRequired(true)
-          .setChoices({ name: 'zh-TW', value: 'zh-TW' }, { name: 'en-US', value: 'en-US' }),
+          .setChoices(
+            {
+              name: 'zh-TW',
+              value: 'zh-TW',
+            },
+            {
+              name: 'en-US',
+              value: 'en-US',
+            },
+          ),
       ),
   )
   .addSubcommand((subcommand) =>
@@ -36,10 +53,32 @@ const build = new SlashCommandBuilder()
         option
           .setName('action')
           .setDescription('新增或移除')
-          .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' })
+          .setDescriptionLocalizations({
+            'en-US': 'Add or remove.',
+          })
+          .addChoices(
+            {
+              name: '新增',
+              name_localizations: { 'en-US': 'Add' },
+              value: 'add',
+            },
+            {
+              name: '移除',
+              name_localizations: { 'en-US': 'Remove' },
+              value: 'remove',
+            },
+          )
           .setRequired(true),
       )
-      .addChannelOption((option) => option.setName('voice').setDescription('請選擇一個語音頻道').setRequired(true)),
+      .addChannelOption((option) =>
+        option
+          .setName('voice')
+          .setDescription('請選擇一個語音頻道')
+          .setDescriptionLocalizations({
+            'en-US': 'Select a voice channel',
+          })
+          .setRequired(true),
+      ),
   )
   .addSubcommand((subcommand) =>
     subcommand
@@ -48,7 +87,15 @@ const build = new SlashCommandBuilder()
       .setDescriptionLocalizations({
         'en-US': 'Edit target roles.',
       })
-      .addStringOption((option) => option.setName('roles').setDescription('請標記身份組').setRequired(true)),
+      .addStringOption((option) =>
+        option
+          .setName('roles')
+          .setDescription('請標記身份組')
+          .setDescriptionLocalizations({
+            'en-US': 'Use @ to mention one or more roles.',
+          })
+          .setRequired(true),
+      ),
   )
   .addSubcommand((subcommand) =>
     subcommand
@@ -57,7 +104,15 @@ const build = new SlashCommandBuilder()
       .setDescriptionLocalizations({
         'en-US': 'Make a role able to use commands.',
       })
-      .addRoleOption((option) => option.setName('role').setDescription('請選擇一個身份組').setRequired(true)),
+      .addRoleOption((option) =>
+        option
+          .setName('role')
+          .setDescription('請選擇一個身份組')
+          .setDescriptionLocalizations({
+            'en-US': 'Select a role.',
+          })
+          .setRequired(true),
+      ),
   )
   .toJSON()
 
@@ -106,6 +161,14 @@ const exec: CommandProps['exec'] = async (interaction) => {
   if (!isAdmin(guild, interaction.user.id)) {
     return {
       content: translate('system.error.adminOnly', { guildId }),
+    }
+  }
+
+  if (interaction.options.getSubcommand() === 'all') {
+    return {
+      content: translate('config.text.list', { guildId }).replace('{GUILD_NAME}', guild.name),
+      embed: getGuildConfigs(guild),
+      isFinished: true,
     }
   }
 

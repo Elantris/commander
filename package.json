@@ -5,11 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "npm run build && node build/main.js",
-    "dev": "NODE_ENV=development ts-node src/main.ts",
+    "dev": "NODE_ENV=development bun run src/main.ts",
     "format": "prettier --write src",
     "build": "rm -rf ./build/* && ./node_modules/.bin/tsc",
-    "pm2": "pm2 start build/main.js --name commander --restart-delay 60000 && pm2 monit",
-    "restart": "pm2 stop commander && pm2 reset commander && pm2 start commander && pm2 monit"
+    "pm2": "pm2 start build/main.js --name commander --restart-delay 60000",
+    "restart": "pm2 stop commander && pm2 reset commander && pm2 start commander"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
   "dependencies": {
     "@firebase/app-types": "~0.9.3",
     "@types/luxon": "^3.4.2",
-    "@types/node": "^22.10.10",
+    "@types/node": "^22.13.0",
     "@types/ws": "^8.5.14",
     "discord.js": "^14.17.3",
     "firebase-admin": "^13.0.2",

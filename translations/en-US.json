@@ -12,6 +12,7 @@
   "record.warning.overwriteRecord": ":warning: Overwrite with new record.",
   "record.text.joinedMembers": "Joined",
   "record.text.leavedMembers": "Leaved",
+  "config.text.list": ":gear: **{GUILD_NAME}**",
   "config.text.updateLocale": ":gear: I can now speaking English (en-US).",
   "config.error.notVoiceChannel": ":x: It is not a voice channel.",
   "config.text.addChannel": ":gear: **{CHANNEL_NAME}** is added.",

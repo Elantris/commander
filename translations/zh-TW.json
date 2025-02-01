@@ -12,6 +12,7 @@
   "record.warning.overwriteRecord": ":warning: 新的點名紀錄已覆蓋",
   "record.text.joinedMembers": "中途加入",
   "record.text.leavedMembers": "中途離開",
+  "config.text.list": ":gear: **{GUILD_NAME}**",
   "config.text.updateLocale": ":gear: 機器人現在會說「正體中文」（zh-TW）",
   "config.error.notVoiceChannel": ":x: 請指定一個語音頻道",
   "config.text.addChannel": ":gear: 新增點名頻道：**{CHANNEL_NAME}**",

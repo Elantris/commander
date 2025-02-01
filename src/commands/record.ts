@@ -133,18 +133,18 @@ const exec: CommandProps['exec'] = async (interaction) => {
   if (!cache.records[guildId]?.[date]) {
     cache.records[guildId][date] = (await database.ref(`/records/${guildId}/${date}`).once('value')).val()
   }
+  const isUpdatedRecord = !!cache.records[guildId][date]
+  const isAppendMode = interaction.options.getString('mode') === 'append'
 
-  const joinedMembers = cache.records[guildId][date]
+  const joinedMembers = isUpdatedRecord
     ? attendedMembers.filter((member) => !cache.records[guildId][date].includes(member.id))
     : []
-  const leavedMemberIds = cache.records[guildId][date]
+  const leavedMemberIds = isUpdatedRecord
     ? cache.records[guildId][date]
         .split(' ')
         .filter((memberId) => !attendedMembers.find((member) => member.id === memberId))
     : []
 
-  const isUpdatedRecord = !!cache.records[guildId][date]
-  const isAppendMode = interaction.options.getString('mode') === 'append'
   const newRecordValue = attendedMembers
     .map((member) => member.id)
     .concat(isAppendMode ? leavedMemberIds : [])
@@ -179,7 +179,7 @@ const exec: CommandProps['exec'] = async (interaction) => {
   }
 
   const fields: APIEmbedField[] = []
-  if (isAppendMode || (isUpdatedRecord && attendedMembers.length > 100)) {
+  if (isUpdatedRecord) {
     if (joinedMembers.length) {
       fields.push({
         name: `${translate('record.text.joinedMembers')} (${joinedMembers.length})`,

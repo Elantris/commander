@@ -1,15 +1,16 @@
-import { Interaction } from 'discord.js'
+import { Interaction, MessageFlags } from 'discord.js'
 import cache, { commands, database } from './utils/cache'
 import sendLog from './utils/sendLog'
 import translate from './utils/translate'
 
 const isCooling: { [GuildID in string]?: boolean } = {}
 const isProcessing: { [GuildID in string]?: boolean } = {}
+const lastUsedAt: { [GuildID in string]?: { [CommandName in string]?: number } } = {}
 const coolingTime: { [CommandName in string]?: number } = {
   config: 5000,
-  modify: 20000,
-  record: 20000,
-  report: 20000,
+  modify: 30000,
+  record: 30000,
+  report: 60000,
 }
 
 // handle commands
@@ -27,15 +28,19 @@ const handleInteraction = async (interaction: Interaction) => {
   if (isProcessing[guildId]) {
     await interaction.reply({
       content: translate('system.text.processing', { guildId }),
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     })
     return
   }
 
-  if (isCooling[guildId]) {
+  if (
+    isCooling[guildId] ||
+    interaction.createdTimestamp - (lastUsedAt[guildId]?.[interaction.commandName] || 0) <
+      (coolingTime[interaction.commandName] || 0)
+  ) {
     await interaction.reply({
       content: translate('system.text.cooling', { guildId }),
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     })
     return
   }
@@ -63,7 +68,7 @@ const handleInteraction = async (interaction: Interaction) => {
             color: 0xcc5de8,
             title: translate('system.text.support', { guildId }),
             url: 'https://discord.gg/Ctwz4BB',
-            footer: { text: 'Version 2025-01-24' },
+            footer: { text: 'Version 2025-02-01' },
             ...commandResult.embed,
           },
         ]
@@ -72,12 +77,16 @@ const handleInteraction = async (interaction: Interaction) => {
   })
 
   isCooling[guildId] = true
-  setTimeout(
-    () => {
-      isCooling[guildId] = false
-    },
-    commandResult.isFinished ? coolingTime[interaction.commandName] ?? 3000 : 3000,
-  )
+  setTimeout(() => {
+    delete isCooling[guildId]
+  }, 3000)
+
+  if (!lastUsedAt[guildId]) {
+    lastUsedAt[guildId] = {}
+  }
+  if (commandResult.isFinished) {
+    lastUsedAt[guildId][interaction.commandName] = interaction.createdTimestamp
+  }
 
   await sendLog(interaction, response.resource?.message)
 }

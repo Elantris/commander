@@ -15,10 +15,10 @@ const handleReady = async (client: Client<true>) => {
   const rest = new REST({ version: '10' }).setToken(appConfig.DISCORD.TOKEN)
   try {
     await rest.put(Routes.applicationCommands(appConfig.DISCORD.CLIENT_ID), { body: commandBuilds })
-  } catch (error: any) {
-    if (error instanceof Error) {
-      await logChannel.send(`\`${timeFormatter()}\` Register slash commands error\n\`\`\`${error.stack}\`\`\``)
-    }
+  } catch (error) {
+    await logChannel.send(
+      `\`${timeFormatter()}\` Register slash commands error\n\`\`\`${error instanceof Error ? error.stack : error}\`\`\``,
+    )
   }
 
   await logChannel.send(`\`${timeFormatter()}\` ${client.user.tag}`)
