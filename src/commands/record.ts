@@ -8,16 +8,12 @@ import translate from '../utils/translate'
 const build = new SlashCommandBuilder()
   .setName('record')
   .setDescription('紀錄當前接聽語音頻道的成員')
-  .setDescriptionLocalizations({
-    'en-US': 'Record all members in voice channels.',
-  })
+  .setDescriptionLocalizations({ 'en-US': 'Record all members in voice channels.' })
   .addStringOption((option) =>
     option
       .setName('mode')
       .setDescription('紀錄模式')
-      .setDescriptionLocalizations({
-        'en-US': 'Record mode',
-      })
+      .setDescriptionLocalizations({ 'en-US': 'Record mode' })
       .addChoices({ name: 'append', value: 'append' }),
   )
   .toJSON()

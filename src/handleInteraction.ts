@@ -68,7 +68,7 @@ const handleInteraction = async (interaction: Interaction) => {
             color: 0xcc5de8,
             title: translate('system.text.support', { guildId }),
             url: 'https://discord.gg/Ctwz4BB',
-            footer: { text: 'Version 2025-02-01' },
+            footer: { text: 'Version 2025-02-03' },
             ...commandResult.embed,
           },
         ]
@@ -81,10 +81,10 @@ const handleInteraction = async (interaction: Interaction) => {
     delete isCooling[guildId]
   }, 3000)
 
-  if (!lastUsedAt[guildId]) {
-    lastUsedAt[guildId] = {}
-  }
   if (commandResult.isFinished) {
+    if (!lastUsedAt[guildId]) {
+      lastUsedAt[guildId] = {}
+    }
     lastUsedAt[guildId][interaction.commandName] = interaction.createdTimestamp
   }
 

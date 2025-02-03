@@ -5,9 +5,7 @@ import translate from '../utils/translate'
 const build: CommandProps['build'] = new SlashCommandBuilder()
   .setName('help')
   .setDescription('Manuals of Commander.')
-  .setDescriptionLocalizations({
-    'zh-TW': 'Commander 使用說明',
-  })
+  .setDescriptionLocalizations({ 'zh-TW': 'Commander 使用說明' })
   .toJSON()
 
 const exec: CommandProps['exec'] = async (interaction) => {
