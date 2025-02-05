@@ -50,7 +50,7 @@ export const handleGuildCreate = async (guild: Guild) => {
             .replace('{OWNER_FROM_NOW}', `${Math.floor(owner.user.createdTimestamp / 1000)}`)
             .replace(
               '{CHANNELS_COUNT}',
-              `Text(${count.textChannels})/ Thread(${count.threads}) / Voice(${count.voiceChannels})`,
+              `Text(${count.textChannels}) / Thread(${count.threads}) / Voice(${count.voiceChannels})`,
             )
             .replace('{MEMBERS_COUNT}', `Member(${count.members}) / Bot(${count.bots})`),
       },
