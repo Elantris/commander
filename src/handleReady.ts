@@ -1,7 +1,8 @@
-import { ChannelType, Client, REST, Routes } from 'discord.js'
-import appConfig from './appConfig'
-import cache, { commandBuilds } from './utils/cache'
-import timeFormatter from './utils/timeFormatter'
+import { ChannelType, Client } from 'discord.js'
+import appConfig from './appConfig.js'
+import { registerCommands } from './handleInteraction.js'
+import cache from './helper/cache.js'
+import timeFormatter from './utils/timeFormatter.js'
 
 const handleReady = async (client: Client<true>) => {
   const logChannel = client.channels.cache.get(appConfig.DISCORD.LOG_CHANNEL_ID)
@@ -12,14 +13,7 @@ const handleReady = async (client: Client<true>) => {
   cache.logChannel = logChannel
 
   // register commands
-  const rest = new REST({ version: '10' }).setToken(appConfig.DISCORD.TOKEN)
-  try {
-    await rest.put(Routes.applicationCommands(appConfig.DISCORD.CLIENT_ID), { body: commandBuilds })
-  } catch (error) {
-    await logChannel.send(
-      `\`${timeFormatter()}\` Register slash commands error\n\`\`\`${error instanceof Error ? error.stack : error}\`\`\``,
-    )
-  }
+  await registerCommands(client)
 
   await logChannel.send(`\`${timeFormatter()}\` ${client.user.tag}`)
 

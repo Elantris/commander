@@ -1,23 +1,19 @@
 import { APIEmbedField, escapeMarkdown, SlashCommandBuilder } from 'discord.js'
-import cache, { CommandProps, database } from '../utils/cache'
-import isAdmin from '../utils/isAdmin'
-import splitMessage from '../utils/splitMessage'
-import timeFormatter from '../utils/timeFormatter'
-import translate from '../utils/translate'
+import cache, { CommandProps, database } from '../helper/cache.js'
+import isAdmin from '../helper/isAdmin.js'
+import translate from '../helper/translate.js'
+import splitMessage from '../utils/splitMessage.js'
+import timeFormatter from '../utils/timeFormatter.js'
 
 const build = new SlashCommandBuilder()
   .setName('record')
   .setDescription('紀錄當前接聽語音頻道的成員')
-  .setDescriptionLocalizations({
-    'en-US': 'Record all members in voice channels.',
-  })
+  .setDescriptionLocalizations({ 'en-US': 'Record all members in voice channels.' })
   .addStringOption((option) =>
     option
       .setName('mode')
       .setDescription('紀錄模式')
-      .setDescriptionLocalizations({
-        'en-US': 'Record mode',
-      })
+      .setDescriptionLocalizations({ 'en-US': 'Record mode' })
       .addChoices({ name: 'append', value: 'append' }),
   )
   .toJSON()

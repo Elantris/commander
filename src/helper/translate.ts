@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
-import cache, { LocaleType } from './cache'
+import cache, { LocaleType } from './cache.js'
 
 export const translations: {
   [Locale in LocaleType]?: {
@@ -11,12 +11,14 @@ export const translations: {
   'en-US': {},
 }
 
-readdirSync(join(__dirname, '../../translations')).forEach((filename) => {
+readdirSync(join(import.meta.dirname, '../../translations')).forEach((filename) => {
   if (!filename.endsWith('.json')) {
     return
   }
   const locale = filename.replace('.json', '') as LocaleType
-  translations[locale] = JSON.parse(readFileSync(join(__dirname, '../../translations', filename), { encoding: 'utf8' }))
+  translations[locale] = JSON.parse(
+    readFileSync(join(import.meta.dirname, '../../translations', filename), { encoding: 'utf8' }),
+  )
 })
 
 const translate: (

@@ -1,7 +1,42 @@
-import { Interaction, MessageFlags } from 'discord.js'
-import cache, { commands, database } from './utils/cache'
-import sendLog from './utils/sendLog'
-import translate from './utils/translate'
+import { Client, Interaction, MessageFlags, REST, RESTPostAPIApplicationCommandsJSONBody, Routes } from 'discord.js'
+import { readdirSync } from 'fs'
+import { join } from 'path'
+import appConfig from './appConfig.js'
+import cache, { CommandProps, database } from './helper/cache.js'
+import sendLog from './helper/sendLog.js'
+import translate from './helper/translate.js'
+import timeFormatter from './utils/timeFormatter.js'
+
+const commands: { [CommandName in string]?: CommandProps['exec'] } = {}
+
+export const registerCommands = async (client: Client<true>) => {
+  const body: RESTPostAPIApplicationCommandsJSONBody[] = []
+
+  for (const filename of readdirSync(join(import.meta.dirname, './commands'))) {
+    if (!filename.endsWith('.js') && !filename.endsWith('.ts')) {
+      return
+    }
+
+    const commandName = filename.split('.')[0]
+    const { default: command }: { default?: Partial<CommandProps> } = await import(
+      join(import.meta.dirname, './commands', filename)
+    )
+
+    if (command?.exec && command.build) {
+      commands[commandName] = command.exec
+      body.push(command.build)
+    }
+  }
+
+  const rest = new REST({ version: '10' }).setToken(appConfig.DISCORD.TOKEN)
+  try {
+    await rest.put(Routes.applicationCommands(client.user.id), { body })
+  } catch (error) {
+    await cache.logChannel?.send(
+      `\`${timeFormatter()}\` Register slash commands error\n\`\`\`${error instanceof Error ? error.stack : error}\`\`\``,
+    )
+  }
+}
 
 const isCooling: { [GuildID in string]?: boolean } = {}
 const isProcessing: { [GuildID in string]?: boolean } = {}
@@ -54,7 +89,7 @@ const handleInteraction = async (interaction: Interaction) => {
     cache.isInit[guildId] = interaction.createdTimestamp
   }
 
-  const commandResult = await command.exec(interaction)
+  const commandResult = await command(interaction)
   isProcessing[guildId] = false
   if (!commandResult) {
     return
@@ -68,7 +103,7 @@ const handleInteraction = async (interaction: Interaction) => {
             color: 0xcc5de8,
             title: translate('system.text.support', { guildId }),
             url: 'https://discord.gg/Ctwz4BB',
-            footer: { text: 'Version 2025-02-01' },
+            footer: { text: 'Version 2025-02-14' },
             ...commandResult.embed,
           },
         ]
@@ -81,10 +116,10 @@ const handleInteraction = async (interaction: Interaction) => {
     delete isCooling[guildId]
   }, 3000)
 
-  if (!lastUsedAt[guildId]) {
-    lastUsedAt[guildId] = {}
-  }
   if (commandResult.isFinished) {
+    if (!lastUsedAt[guildId]) {
+      lastUsedAt[guildId] = {}
+    }
     lastUsedAt[guildId][interaction.commandName] = interaction.createdTimestamp
   }
 

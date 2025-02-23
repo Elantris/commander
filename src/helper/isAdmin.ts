@@ -1,5 +1,5 @@
 import { Guild } from 'discord.js'
-import cache from './cache'
+import cache from './cache.js'
 
 const isAdmin: (guild: Guild, memberId: string) => boolean = (guild, memberId) => {
   const member = guild.members.cache.get(memberId)

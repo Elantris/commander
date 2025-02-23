@@ -1,13 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js'
-import { CommandProps } from '../utils/cache'
-import translate from '../utils/translate'
+import { CommandProps } from '../helper/cache.js'
+import translate from '../helper/translate.js'
 
 const build: CommandProps['build'] = new SlashCommandBuilder()
   .setName('help')
   .setDescription('Manuals of Commander.')
-  .setDescriptionLocalizations({
-    'zh-TW': 'Commander 使用說明',
-  })
+  .setDescriptionLocalizations({ 'zh-TW': 'Commander 使用說明' })
   .toJSON()
 
 const exec: CommandProps['exec'] = async (interaction) => {

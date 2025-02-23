@@ -1,15 +1,13 @@
 import { SlashCommandBuilder } from 'discord.js'
-import { CommandProps } from '../utils/cache'
-import isAdmin from '../utils/isAdmin'
-import timeFormatter from '../utils/timeFormatter'
-import translate from '../utils/translate'
+import { CommandProps } from '../helper/cache.js'
+import isAdmin from '../helper/isAdmin.js'
+import translate from '../helper/translate.js'
+import timeFormatter from '../utils/timeFormatter.js'
 
 const build = new SlashCommandBuilder()
   .setName('raffle')
   .setDescription('隨機抽選一名當前接聽語音頻道的成員')
-  .setDescriptionLocalizations({
-    'en-US': 'Random pick a member in voice channels.',
-  })
+  .setDescriptionLocalizations({ 'en-US': 'Random pick a member in voice channels.' })
   .toJSON()
 
 const exec: CommandProps['exec'] = async (interaction) => {

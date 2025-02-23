@@ -1,8 +1,6 @@
 import { APIEmbed, ChatInputCommandInteraction, RESTPostAPIApplicationCommandsJSONBody, TextChannel } from 'discord.js'
 import admin, { ServiceAccount } from 'firebase-admin'
-import { readdirSync } from 'fs'
-import { join } from 'path'
-import appConfig from '../appConfig'
+import appConfig from '../appConfig.js'
 
 // type definitions
 export type CommandProps = {
@@ -18,25 +16,6 @@ export const locales = ['zh-TW', 'en-US'] as const
 export type LocaleType = (typeof locales)[number]
 export const isLocaleType = (target: LocaleType | string): target is LocaleType =>
   !!locales.find((locale) => locale === target)
-
-// load commands
-export const commands: { [CommandName in string]?: CommandProps } = {}
-export const commandBuilds: RESTPostAPIApplicationCommandsJSONBody[] = []
-
-readdirSync(join(__dirname, '../commands')).forEach(async (filename) => {
-  if (!filename.endsWith('.js') && !filename.endsWith('.ts')) {
-    return
-  }
-  const commandName = filename.split('.')[0]
-  const {
-    default: command,
-  }: {
-    default: CommandProps
-  } = await import(join(__dirname, '../commands', filename))
-
-  commands[commandName] = command
-  commandBuilds.push(command.build)
-})
 
 // firebase
 admin.initializeApp({

@@ -1,6 +1,6 @@
 import { escapeMarkdown, Guild } from 'discord.js'
-import cache from './utils/cache'
-import timeFormatter from './utils/timeFormatter'
+import cache from './helper/cache.js'
+import timeFormatter from './utils/timeFormatter.js'
 
 export const handleGuildCreate = async (guild: Guild) => {
   if (!cache.isReady) {
@@ -50,7 +50,7 @@ export const handleGuildCreate = async (guild: Guild) => {
             .replace('{OWNER_FROM_NOW}', `${Math.floor(owner.user.createdTimestamp / 1000)}`)
             .replace(
               '{CHANNELS_COUNT}',
-              `Text(${count.textChannels})/ Thread(${count.threads}) / Voice(${count.voiceChannels})`,
+              `Text(${count.textChannels}) / Thread(${count.threads}) / Voice(${count.voiceChannels})`,
             )
             .replace('{MEMBERS_COUNT}', `Member(${count.members}) / Bot(${count.bots})`),
       },

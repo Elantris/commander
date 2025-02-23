@@ -1,29 +1,30 @@
 import { APIEmbed, escapeMarkdown, Role, SlashCommandBuilder } from 'discord.js'
 import { DateTime } from 'luxon'
-import cache, { CommandProps, database } from '../utils/cache'
-import isAdmin from '../utils/isAdmin'
-import isDateValid from '../utils/isDateValid'
-import splitMessage from '../utils/splitMessage'
-import translate from '../utils/translate'
+import cache, { CommandProps, database } from '../helper/cache.js'
+import isAdmin from '../helper/isAdmin.js'
+import translate from '../helper/translate.js'
+import isDateValid from '../utils/isDateValid.js'
+import splitMessage from '../utils/splitMessage.js'
+import timeFormatter from '../utils/timeFormatter.js'
+
+const todayDate = timeFormatter({ format: 'yyyyMMdd' })
 
 const build = new SlashCommandBuilder()
   .setName('report')
   .setDescription('統計一段時間內的出席狀況')
-  .setDescriptionLocalizations({
-    'en-US': 'Count the attendances during the interval.',
-  })
+  .setDescriptionLocalizations({ 'en-US': 'Count the attendances during the interval.' })
   .addIntegerOption((option) =>
-    option.setName('from').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
+    option.setName('from').setDescription(`日期格式：YYYYMMDD，例如：${todayDate}`).setRequired(true),
   )
   .addIntegerOption((option) =>
-    option.setName('to').setDescription('日期格式：YYYYMMDD，例如：20220801').setRequired(true),
+    option.setName('to').setDescription(`日期格式：YYYYMMDD，例如：${todayDate}`).setRequired(true),
   )
   .toJSON()
 
 const exec: CommandProps['exec'] = async (interaction) => {
   const { guildId, guild } = interaction
-  const from = interaction.options.getInteger('from')
-  const to = interaction.options.getInteger('to')
+  const from = interaction.options.getInteger('from', true)
+  const to = interaction.options.getInteger('to', true)
 
   if (!guildId || !guild || !from || !to) {
     return

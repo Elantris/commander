@@ -1,7 +1,6 @@
 import { ChatInputCommandInteraction, escapeMarkdown, Message } from 'discord.js'
-import cache from './cache'
-
-import timeFormatter from './timeFormatter'
+import timeFormatter from '../utils/timeFormatter.js'
+import cache from './cache.js'
 
 const sendLog = async (command: ChatInputCommandInteraction, response?: Message | null) => {
   if (!command.inGuild() || !response) {
