@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js'
+import { SlashCommandBuilder, VoiceBasedChannel } from 'discord.js'
 import { CommandProps } from '../helper/cache.js'
 import isAdmin from '../helper/isAdmin.js'
 import translate from '../helper/translate.js'
@@ -24,42 +24,33 @@ const exec: CommandProps['exec'] = async (interaction) => {
   }
 
   // channels
-  const targetChannel: {
-    id: string
-    name: string
-    memberIds: string[]
-  } = {
-    id: '',
-    name: '',
-    memberIds: [],
-  }
-
-  guild.channels.cache.forEach((channel) => {
+  const targetChannel = guild.channels.cache.find((channel): channel is VoiceBasedChannel => {
     if (!channel.isVoiceBased() || channel.members.size === 0 || !channel.members.get(interaction.user.id)) {
-      return
+      return false
     }
-    targetChannel.id = channel.id
-    targetChannel.name = channel.name
-    targetChannel.memberIds = channel.members.map((member) => member.id)
+    return true
   })
 
-  if (!targetChannel.id || !targetChannel.memberIds.length) {
+  if (!targetChannel || !targetChannel.id || !targetChannel.members.size) {
     return {
       content: translate('record.error.notInVoiceChannel', { guildId }),
     }
   }
 
-  const luck = Math.floor(Math.random() * targetChannel.memberIds.length)
+  const members = targetChannel.members.map((v) => v)
+  const luck = Math.floor(Math.random() * members.length)
 
   // response
   return {
-    content: ':triangular_flag_on_post: 中獎人為：<@{MEMBER_ID}>'.replace('{MEMBER_ID}', targetChannel.memberIds[luck]),
+    content: ':triangular_flag_on_post: 中獎人為：{MEMBER} <@{MEMBER_ID}>'
+      .replace('{MEMBER}', members[luck].displayName)
+      .replace('{MEMBER_ID}', members[luck].id),
     embed: {
       description: '抽獎時間：`{TIME}`\n抽獎頻道：{CHANNELS}\n參與人數：{ALL_COUNT}\n中獎機率：{LUCK}%'
         .replace('{TIME}', timeFormatter({ time: interaction.createdTimestamp }))
         .replace('{CHANNELS}', targetChannel.name)
-        .replace('{ALL_COUNT}', `${targetChannel.memberIds.length}`)
-        .replace('{LUCK}', `${((1 / targetChannel.memberIds.length) * 100).toFixed(2)}`),
+        .replace('{ALL_COUNT}', `${members.length}`)
+        .replace('{LUCK}', `${((1 / members.length) * 100).toFixed(2)}`),
     },
     isFinished: true,
   }
